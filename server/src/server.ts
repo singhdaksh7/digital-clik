@@ -2,8 +2,9 @@ import app from './app.js';
 import { prisma } from './lib/prisma.js';
 
 const PORT = process.env.PORT || 5000;
+const HOST = process.env.HOST || '127.0.0.1';
 
-const server = app.listen(PORT, () => {
+const server = app.listen(Number(PORT), HOST, () => {
   console.log(`⚡ DigitalClik CMS Server running on http://localhost:${PORT}`);
 });
 
