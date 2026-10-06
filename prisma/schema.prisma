@@ -1,0 +1,643 @@
+// Prisma Schema for DigitalClik CMS Platform
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// -----------------------------------------------------------------------------
+// SYSTEM & AUTHENTICATION
+// -----------------------------------------------------------------------------
+
+model AdminUser {
+  id            String         @id @default(uuid())
+  name          String
+  email         String         @unique
+  passwordHash  String
+  role          String         @default("ADMIN") // SUPER_ADMIN, ADMIN, EDITOR
+  status        String         @default("ACTIVE") // ACTIVE, INACTIVE
+  tokenVersion  Int            @default(0)
+  lastLoginAt   DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  auditLogs     AuditLog[]
+  refreshTokens RefreshToken[]
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  user      AdminUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String    @unique
+  family    String
+  isRevoked Boolean   @default(false)
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([token])
+  @@index([family])
+}
+
+model AuditLog {
+  id         String     @id @default(uuid())
+  userId     String?
+  user       AdminUser? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action     String     // LOGIN, CREATE, UPDATE, DELETE, PUBLISH, UNPUBLISH, SETTINGS_CHANGE
+  entityType String
+  entityId   String?
+  metadata   String?    // JSON stringified details
+  createdAt  DateTime   @default(now())
+
+  @@index([userId])
+  @@index([entityType])
+  @@index([createdAt])
+}
+
+// -----------------------------------------------------------------------------
+// SITE SETTINGS & GLOBAL CONFIGURATION
+// -----------------------------------------------------------------------------
+
+model SiteSettings {
+  id                   String   @id @default("default")
+  companyName          String   @default("DigitalClik")
+  shortName            String   @default("DigitalClik Agency")
+  logoLight            String   @default("/logo.svg")
+  logoDark             String   @default("/logo.svg")
+  favicon              String   @default("/favicon.ico")
+  email                String   @default("hello@digitalclik.com")
+  phone                String   @default("+1 (800) 555-CLIK")
+  whatsapp             String   @default("+18005552545")
+  address              String   @default("DigitalClik Headquarters")
+  city                 String   @default("New York")
+  state                String   @default("NY")
+  country              String   @default("USA")
+  postalCode           String   @default("10001")
+  businessHours        String   @default("Mon-Fri: 9:00 AM - 6:00 PM EST")
+  instagram            String   @default("https://instagram.com/digitalclik")
+  linkedin             String   @default("https://linkedin.com/company/digitalclik")
+  facebook             String   @default("https://facebook.com/digitalclik")
+  youtube              String   @default("https://youtube.com/digitalclik")
+  twitter              String   @default("https://x.com/digitalclik")
+  behance              String   @default("https://behance.net/digitalclik")
+  dribbble             String   @default("https://dribbble.com/digitalclik")
+  defaultMetaTitle     String   @default("DigitalClik | Premier Digital Agency & AI Search Experts")
+  defaultMetaDescription String @default("DigitalClik is an independent creative studio and digital growth agency specializing in brand identity, sub-second web platforms, AEO/GEO search authority, and performance media.")
+  defaultOgImage       String   @default("/og-image.jpg")
+  googleAnalyticsId    String   @default("")
+  googleTagManagerId   String   @default("")
+  updatedAt            DateTime @updatedAt
+}
+
+model AnnouncementBar {
+  id        String   @id @default("default")
+  enabled   Boolean  @default(true)
+  text      String   @default("AI Search Authority (AEO/GEO) & High-Speed Web Platforms")
+  linkText  String   @default("EXPLORE AUDIT ↗")
+  linkUrl   String   @default("#audit")
+  updatedAt DateTime @updatedAt
+}
+
+// -----------------------------------------------------------------------------
+// HOMEPAGE SECTIONS & HERO COLLAGE
+// -----------------------------------------------------------------------------
+
+model HomepageSection {
+  id          String   @id @default(uuid())
+  sectionKey  String   @unique // HERO, MANIFESTO, SERVICES, FEATURED_WORK, PROCESS, INDUSTRIES, TESTIMONIALS, CTA
+  sectionType String   @default("STANDARD")
+  title       String?
+  subtitle    String?
+  eyebrow     String?
+  content     String?  // JSON formatted section content
+  sortOrder   Int      @default(0)
+  isVisible   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([sortOrder])
+  @@index([isVisible])
+}
+
+model HeroMedia {
+  id        String   @id @default(uuid())
+  url       String
+  altText   String   @default("Hero Visual Frame")
+  label     String   @default("WEB PLATFORM")
+  link      String   @default("#")
+  sortOrder Int      @default(0)
+  isVisible Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([sortOrder])
+}
+
+// -----------------------------------------------------------------------------
+// NAVIGATION & MEGA MENU
+// -----------------------------------------------------------------------------
+
+model NavigationMenu {
+  id        String           @id @default(uuid())
+  key       String           @unique // HEADER, SERVICES_MEGA_MENU, MOBILE, FOOTER
+  title     String
+  items     NavigationItem[]
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+}
+
+model NavigationItem {
+  id               String          @id @default(uuid())
+  menuId           String
+  menu             NavigationMenu  @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  parentId         String?
+  label            String
+  url              String
+  sortOrder        Int             @default(0)
+  isVisible        Boolean         @default(true)
+  openInNewTab     Boolean         @default(false)
+  linkedServiceId  String?
+  linkedIndustryId String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@index([menuId])
+  @@index([sortOrder])
+}
+
+model MegaMenuColumn {
+  id        String   @id @default(uuid())
+  title     String
+  sortOrder Int      @default(0)
+  items     String   // JSON list of link objects
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// -----------------------------------------------------------------------------
+// SERVICES & SERVICE BUILDER
+// -----------------------------------------------------------------------------
+
+model ServiceCategory {
+  id          String    @id @default(uuid())
+  name        String
+  slug        String    @unique
+  description String?
+  icon        String?
+  sortOrder   Int       @default(0)
+  isVisible   Boolean   @default(true)
+  services    Service[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([sortOrder])
+}
+
+model Service {
+  id               String           @id @default(uuid())
+  categoryId       String?
+  category         ServiceCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  code             String           @default("01")
+  title            String
+  slug             String           @unique
+  categoryLabel    String           @default("CAPABILITY")
+  shortDescription String
+  heroTitle        String?
+  heroSubtitle     String?
+  heroMedia        String?
+  overview         String?
+  icon             String?
+  metric           String?
+  featured         Boolean          @default(true)
+  homepageOrder    Int              @default(0)
+  sortOrder        Int              @default(0)
+  status           String           @default("PUBLISHED") // DRAFT, PUBLISHED, ARCHIVED
+  capabilities     String?          // JSON string array
+  features         String?          // JSON string array
+  tools            String?          // JSON string array
+  metaTitle        String?
+  metaDescription  String?
+  sections         ServiceSection[]
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@index([slug])
+  @@index([status])
+  @@index([sortOrder])
+  @@index([featured])
+}
+
+model ServiceSection {
+  id        String   @id @default(uuid())
+  serviceId String
+  service   Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  type      String   // OVERVIEW, CAPABILITIES, BENEFITS, PROCESS, TOOLS, FAQ, CTA
+  title     String?
+  subtitle  String?
+  content   String?  // JSON data
+  sortOrder Int      @default(0)
+  isVisible Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([serviceId])
+  @@index([sortOrder])
+}
+
+// -----------------------------------------------------------------------------
+// INDUSTRIES
+// -----------------------------------------------------------------------------
+
+model Industry {
+  id               String   @id @default(uuid())
+  code             String   @default("01")
+  name             String
+  slug             String   @unique
+  shortDescription String
+  heroTitle        String?
+  heroDescription  String?
+  heroMedia        String?
+  overview         String?
+  challenges       String?  // JSON string
+  solutions        String?  // JSON string
+  featured         Boolean  @default(true)
+  homepageOrder    Int      @default(0)
+  sortOrder        Int      @default(0)
+  status           String   @default("PUBLISHED") // DRAFT, PUBLISHED, ARCHIVED
+  metaTitle        String?
+  metaDescription  String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([slug])
+  @@index([status])
+  @@index([sortOrder])
+}
+
+// -----------------------------------------------------------------------------
+// PROJECTS, PORTFOLIO & CASE STUDIES
+// -----------------------------------------------------------------------------
+
+model ProjectCategory {
+  id        String    @id @default(uuid())
+  name      String
+  slug      String    @unique
+  sortOrder Int       @default(0)
+  isVisible Boolean   @default(true)
+  projects  Project[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Project {
+  id                  String           @id @default(uuid())
+  title               String
+  slug                String           @unique
+  client              String
+  category            String           // FINTECH PLATFORM, ENTERPRISE SAAS, DIRECT-TO-CONSUMER
+  categoryId          String?
+  projectCategory     ProjectCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  year                String           @default("2026")
+  metric              String           @default("SEO & Organic Growth")
+  metricLabel         String?
+  layout              String           @default("full") // full, split, bleed
+  image               String
+  summary             String
+  description         String?
+  challenge           String?
+  strategy            String?
+  solution            String?
+  results             String?
+  deliverables        String?          // JSON array
+  featuredOnHomepage  Boolean          @default(true)
+  homepageSortOrder   Int              @default(0)
+  sortOrder           Int              @default(0)
+  status              String           @default("PUBLISHED") // DRAFT, PUBLISHED, ARCHIVED
+  metaTitle           String?
+  metaDescription     String?
+  gallery             ProjectMedia[]
+  caseStudies         CaseStudy[]
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  @@index([slug])
+  @@index([status])
+  @@index([featuredOnHomepage])
+  @@index([sortOrder])
+}
+
+model ProjectMedia {
+  id        String   @id @default(uuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  url       String
+  caption   String?
+  alt       String?  @default("Project Gallery Media")
+  type      String   @default("IMAGE") // IMAGE, VIDEO
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([projectId])
+  @@index([sortOrder])
+}
+
+model CaseStudy {
+  id              String             @id @default(uuid())
+  title           String
+  slug            String             @unique
+  client          String
+  category        String             // fintech, saas, ecom, health
+  categoryLabel   String
+  summary         String
+  intro           String?
+  challenge       String?
+  strategy        String?
+  execution       String?
+  results         String?
+  metric          String             @default("Organic Growth")
+  metricLabel     String             @default("SEO Strategy")
+  tags            String?            // JSON string array
+  featured        Boolean            @default(true)
+  status          String             @default("PUBLISHED")
+  metaTitle       String?
+  metaDescription String?
+  projectId       String?
+  project         Project?           @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  sections        CaseStudySection[]
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@index([slug])
+  @@index([status])
+  @@index([featured])
+}
+
+model CaseStudySection {
+  id          String    @id @default(uuid())
+  caseStudyId String
+  caseStudy   CaseStudy @relation(fields: [caseStudyId], references: [id], onDelete: Cascade)
+  type        String    // INTRO, CHALLENGE, STRATEGY, EXECUTION, RESULT, METRIC
+  title       String?
+  content     String?   // JSON data
+  sortOrder   Int       @default(0)
+  isVisible   Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+
+  @@index([caseStudyId])
+  @@index([sortOrder])
+}
+
+// -----------------------------------------------------------------------------
+// CLIENTS & TESTIMONIALS
+// -----------------------------------------------------------------------------
+
+model Client {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  logo        String?
+  website     String?
+  industry    String?
+  description String?
+  featured    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  isVisible   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([sortOrder])
+}
+
+model Testimonial {
+  id        String   @id @default(uuid())
+  author    String
+  title     String
+  company   String
+  quote     String
+  photo     String?
+  logo      String?
+  rating    String?
+  featured  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  status    String   @default("PUBLISHED")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([sortOrder])
+  @@index([featured])
+}
+
+// -----------------------------------------------------------------------------
+// PROCESS STEPS & FAQS
+// -----------------------------------------------------------------------------
+
+model ProcessStep {
+  id          String   @id @default(uuid())
+  num         String   @default("01")
+  title       String
+  subtitle    String
+  description String
+  sortOrder   Int      @default(0)
+  isVisible   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([sortOrder])
+}
+
+model FAQ {
+  id         String   @id @default(uuid())
+  question   String
+  answer     String
+  category   String   @default("General")
+  serviceId  String?
+  industryId String?
+  sortOrder  Int      @default(0)
+  isVisible  Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([sortOrder])
+}
+
+// -----------------------------------------------------------------------------
+// BLOG & EDITORIAL CONTENT
+// -----------------------------------------------------------------------------
+
+model BlogCategory {
+  id        String     @id @default(uuid())
+  name      String
+  slug      String     @unique
+  posts     BlogPost[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model BlogPost {
+  id              String        @id @default(uuid())
+  title           String
+  slug            String        @unique
+  excerpt         String
+  content         String        // HTML or Markdown
+  coverImage      String
+  categoryId      String?
+  category        BlogCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  authorName      String        @default("DigitalClik Editorial Team")
+  status          String        @default("PUBLISHED") // DRAFT, PUBLISHED, ARCHIVED
+  publishedAt     DateTime      @default(now())
+  featured        Boolean       @default(false)
+  metaTitle       String?
+  metaDescription String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([slug])
+  @@index([status])
+  @@index([publishedAt])
+}
+
+// -----------------------------------------------------------------------------
+// TEAM MEMBERS
+// -----------------------------------------------------------------------------
+
+model TeamMember {
+  id        String   @id @default(uuid())
+  name      String
+  role      String
+  bio       String?
+  photo     String?
+  linkedin  String?
+  twitter   String?
+  sortOrder Int      @default(0)
+  isVisible Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([sortOrder])
+}
+
+// -----------------------------------------------------------------------------
+// LEADS & INQUIRIES
+// -----------------------------------------------------------------------------
+
+model ContactSubmission {
+  id         String   @id @default(uuid())
+  name       String
+  email      String
+  phone      String?
+  company    String?
+  website    String?
+  subject    String?  @default("General Consultation")
+  message    String
+  sourcePage String?  @default("Contact Page")
+  status     String   @default("NEW") // NEW, CONTACTED, QUALIFIED, WON, LOST, SPAM
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([email])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model ProjectEnquiry {
+  id           String   @id @default(uuid())
+  name         String
+  email        String
+  phone        String?
+  company      String?
+  website      String
+  services     String?  // JSON array
+  monthlySpend String?  @default("$5,000 - $10,000")
+  message      String?
+  sourcePage   String?  @default("Audit Modal")
+  status       String   @default("NEW") // NEW, CONTACTED, QUALIFIED, PROPOSAL_SENT, WON, LOST, SPAM
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([email])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model NewsletterSubscriber {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  status       String   @default("SUBSCRIBED") // SUBSCRIBED, UNSUBSCRIBED
+  subscribedAt DateTime @default(now())
+
+  @@index([email])
+}
+
+model FormOption {
+  id        String   @id @default(uuid())
+  formType  String   // AUDIT_MODAL, CONTACT_FORM
+  fieldKey  String   // budget, monthlySpend, service
+  label     String
+  value     String
+  sortOrder Int      @default(0)
+  isVisible Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([formType])
+  @@index([fieldKey])
+}
+
+// -----------------------------------------------------------------------------
+// MEDIA LIBRARY
+// -----------------------------------------------------------------------------
+
+model MediaItem {
+  id           String   @id @default(uuid())
+  filename     String
+  originalName String
+  mimeType     String
+  size         Int
+  url          String
+  altText      String?  @default("DigitalClik Media Asset")
+  caption      String?
+  createdAt    DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+// -----------------------------------------------------------------------------
+// STATIC PAGES & MODULAR PAGE BUILDER
+// -----------------------------------------------------------------------------
+
+model Page {
+  id              String        @id @default(uuid())
+  title           String
+  slug            String        @unique
+  pageType        String        @default("STATIC") // STATIC, LANDING
+  status          String        @default("PUBLISHED")
+  metaTitle       String?
+  metaDescription String?
+  sections        PageSection[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([slug])
+}
+
+model PageSection {
+  id        String   @id @default(uuid())
+  pageId    String
+  page      Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  type      String   // HERO, TEXT, IMAGE_TEXT, STATS, SERVICES, PROJECTS, TESTIMONIAL, FAQ, CTA
+  title     String?
+  content   String?  // JSON string
+  sortOrder Int      @default(0)
+  isVisible Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([pageId])
+  @@index([sortOrder])
+}

@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+
+# Builds
+dist/
+server/dist/
+dist-ssr/
+coverage/
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Runtime / uploads
+uploads/
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Local database artifacts
+*.db
+*.db-journal
+prisma/dev.db
+
+# Temp
+tmp/
+temp/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.suo
+*.sln
+*.sw?

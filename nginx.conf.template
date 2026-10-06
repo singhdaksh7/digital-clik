@@ -1,0 +1,53 @@
+# Nginx Configuration Template for DigitalClik Production Deployment
+# DO NOT APPLY DIRECTLY - Template to be configured during production setup phase.
+
+server {
+    listen 80;
+    server_name digitalclik.com www.digitalclik.com;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name digitalclik.com www.digitalclik.com;
+
+    ssl_certificate /etc/letsencrypt/live/digitalclik.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/digitalclik.com/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+
+    root /var/www/digitalclik/dist;
+    index index.html;
+
+    # Security Headers
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+    # API Proxy to PM2 Node backend
+    location /api/ {
+        proxy_pass http://127.0.0.1:5000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+        client_max_body_size 15M;
+    }
+
+    # Static Uploads (Local Storage fallback)
+    location /uploads/ {
+        alias /var/www/digitalclik/uploads/;
+        expires 30d;
+        add_header Cache-Control "public, no-transform";
+    }
+
+    # SPA Frontend fallback
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
