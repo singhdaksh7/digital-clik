@@ -182,7 +182,7 @@ export async function uploadMediaFile(file) {
   const formData = new FormData();
   formData.append('file', file);
 
-  const res = await fetch('http://localhost:5000/api/admin/media/upload', {
+  const res = await fetch('/api/admin/media/upload', {
     method: 'POST',
     headers: {
       ...(token ? { Authorization: `Bearer ${token}` } : {})

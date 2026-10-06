@@ -41,7 +41,7 @@ export default function MediaLibraryCMS() {
   };
 
   const handleCopyUrl = (url, id) => {
-    const fullUrl = url.startsWith('http') ? url : `http://localhost:5000${url}`;
+    const fullUrl = url.startsWith('http') ? url : `${window.location.origin}${url}`;
     navigator.clipboard.writeText(fullUrl);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
@@ -82,7 +82,7 @@ export default function MediaLibraryCMS() {
         {media.map(m => (
           <div key={m.id} className="dc-card" style={{ padding: '1rem', background: '#FFFFFF', border: '1px solid var(--dc-border)', display: 'flex', flexDirection: 'column' }}>
             <div style={{ height: '160px', background: 'var(--dc-bg-soft)', borderRadius: '8px', overflow: 'hidden', marginBottom: '0.75rem', position: 'relative' }}>
-              <img src={m.url.startsWith('http') ? m.url : `http://localhost:5000${m.url}`} alt={m.altText || m.filename} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <img src={m.url} alt={m.altText || m.filename} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
 
             <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0A0A0A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: '0.2rem' }}>
