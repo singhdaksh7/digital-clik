@@ -11,6 +11,9 @@ dotenv.config();
 
 const app = express();
 
+// Behind Nginx: trust the first proxy hop so req.ip is the real client IP (rate limiting)
+app.set('trust proxy', 1);
+
 // Security and middleware
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
