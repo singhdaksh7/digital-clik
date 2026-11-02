@@ -3,12 +3,12 @@ import { ArrowUpRight } from 'lucide-react';
 
 export default function IndustryGrid({ onSelectIndustry }) {
   const industries = [
-    { id: 'real-estate', name: 'REAL ESTATE & PROPTECH', code: '01', desc: 'Hyper-local search engine optimization, property video tours & lead capture.' },
-    { id: 'education', name: 'EDUCATION & ACADEMICS', code: '02', desc: 'Enrollment acquisition campaigns, university branding & student portals.' },
-    { id: 'e-commerce', name: 'E-COMMERCE & DTC RETAIL', code: '03', desc: 'Headless storefront engineering, UGC video ads & high-ROAS paid media.' },
-    { id: 'healthcare', name: 'HEALTHCARE & MEDTECH', code: '04', desc: 'HIPAA-compliant patient portals, local search authority & clinic growth.' },
-    { id: 'fintech', name: 'FINTECH & DIGITAL BANKING', code: '05', desc: 'AI search entity authority, compliant investor acquisition & web apps.' },
-    { id: 'saas', name: 'ENTERPRISE SAAS & B2B', code: '06', desc: 'Account-based marketing, enterprise search positioning & demo funnels.' }
+    { id: 'real-estate', name: 'REAL ESTATE', code: '01', desc: 'Property listing portals, broker CRMs, lead capture workflows and project landing pages.' },
+    { id: 'healthcare', name: 'HEALTHCARE', code: '02', desc: 'Patient booking systems, clinic websites, doctor schedules and local search presence.' },
+    { id: 'e-commerce', name: 'E-COMMERCE & RETAIL', code: '03', desc: 'Online stores, catalogue management, payment setup and inventory sync.' },
+    { id: 'education', name: 'EDUCATION', code: '04', desc: 'Course enquiry pages, student portals, school websites and admission forms.' },
+    { id: 'professional-services', name: 'PROFESSIONAL SERVICES', code: '05', desc: 'Firm websites, case inquiry forms, client portals and local search visibility.' },
+    { id: 'startups', name: 'STARTUPS & GROWING BUSINESSES', code: '06', desc: 'MVPs, internal dashboards, custom web apps and workflow automation.' }
   ];
 
   return (
@@ -19,14 +19,14 @@ export default function IndustryGrid({ onSelectIndustry }) {
         <div style={{ marginBottom: '3.5rem', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1.5rem' }}>
           <div>
             <span className="dc-badge dc-badge-purple" style={{ marginBottom: '1rem' }}>
-              SECTOR SPECIALIZATION
+              WHO WE WORK WITH
             </span>
             <h2>
-              Industry <span className="dc-text-purple">Playbooks.</span>
+              Industries We <span className="dc-text-purple">Work With.</span>
             </h2>
           </div>
           <p style={{ maxWidth: '450px', color: 'var(--dc-text-secondary)', fontSize: '1.05rem' }}>
-            We bring deep sector insights and proven growth frameworks tailored to your specific market dynamics.
+            From local businesses to fast-growing firms, we build the digital systems that keep operations moving.
           </p>
         </div>
 

@@ -7,47 +7,47 @@ export default function CaseStudiesView({ onOpenAuditModal }) {
   const caseStudies = [
     {
       id: '1',
-      client: 'NexoPay Banking',
-      category: 'fintech',
-      categoryLabel: 'FinTech & Banking',
-      title: 'Digital Banking Platform & Organic Search Authority',
-      metric: 'Organic Growth',
-      metricLabel: 'SEO & Entity Search Strategy',
-      summary: 'Re-architected NexoPay\'s digital search presence and customer portal, capturing high-intent financial queries and scaling monthly digital transactions.',
-      tags: ['AI Search (GEO)', 'Enterprise SEO', 'Next.js App']
+      client: 'Real Estate Sales Team',
+      category: 'real-estate',
+      categoryLabel: 'Real Estate CRM',
+      title: 'Custom Lead Management & Property Portal',
+      metric: 'Lead Workflow',
+      metricLabel: 'CRM & Property Portal',
+      summary: 'Centralized property CRM and listing portal built for a real estate sales team to manage incoming inquiries, client requirements, follow-ups, and site visits in one place.',
+      tags: ['Custom CRM', 'WhatsApp Lead Alerts', 'Property Portal']
     },
     {
       id: '2',
-      client: 'CloudScale AI',
-      category: 'saas',
-      categoryLabel: 'B2B Enterprise SaaS',
-      title: 'Enterprise ABM Campaign & Multi-Channel Acquisition',
-      metric: 'Acquisition Scale',
-      metricLabel: 'Enterprise Performance PPC',
-      summary: 'Deployed targeted LinkedIn and Google Search account-based campaigns to acquire Fortune 500 infrastructure and CTO leads.',
-      tags: ['Performance PPC', 'LinkedIn ABM', 'CRO']
+      client: 'Diagnostic & Clinic Network',
+      category: 'healthcare',
+      categoryLabel: 'Healthcare & Booking',
+      title: 'Clinic Booking & Patient Records Dashboard',
+      metric: 'Direct Booking',
+      metricLabel: 'Patient Scheduling System',
+      summary: 'Fast patient scheduling interface and clinic management dashboard allowing front-desk staff and patients to coordinate appointments without manual phone tag.',
+      tags: ['Appointment Booking', 'Doctor Schedules', 'Admin Reception Panel']
     },
     {
       id: '3',
-      client: 'Verve Luxury',
-      category: 'ecom',
-      categoryLabel: 'Direct-to-Consumer',
-      title: 'Omnichannel E-Commerce & Creator UGC Ads',
-      metric: 'Ad Performance',
-      metricLabel: 'Creator UGC & Social Ads',
-      summary: 'Built high-velocity creator UGC video ad pipelines releasing multi-angle variations weekly across Meta and TikTok feeds.',
-      tags: ['Video Studio', 'TikTok Ads', 'UGC']
+      client: 'Direct-to-Consumer Apparel Brand',
+      category: 'ecommerce',
+      categoryLabel: 'E-Commerce & Retail',
+      title: 'Custom Shopify Storefront & Social Content Engine',
+      metric: 'Store & Content',
+      metricLabel: 'Storefront & Social Calendars',
+      summary: 'Custom storefront rebuild paired with weekly reel production, product photography edits, and catalogue management to support seasonal drops.',
+      tags: ['Shopify Storefront', 'Reel Editing', 'Product Catalogue']
     },
     {
       id: '4',
-      client: 'PulseCare Health',
-      category: 'health',
-      categoryLabel: 'Healthcare & Telemedicine',
-      title: 'Patient Consultation Portal & Sub-Second App',
-      metric: 'Speed Score',
-      metricLabel: 'Next.js App Architecture',
-      summary: 'Designed and engineered Next.js patient consultation platform with HIPAA-compliant API workflows and automated scheduling.',
-      tags: ['Next.js PWA', 'SEO', 'Web App']
+      client: 'Regional Logistics Fleet',
+      category: 'logistics',
+      categoryLabel: 'Logistics & Fleet',
+      title: 'Fleet Dispatch Portal & Route Tracking',
+      metric: 'Fleet Operations',
+      metricLabel: 'Internal Dispatch Dashboard',
+      summary: 'Internal operations dashboard built for fleet dispatchers to coordinate vehicle status, driver assignments, and delivery logs across branch hubs.',
+      tags: ['Dispatch Portal', 'Route Coordination', 'Internal Tools']
     }
   ];
 
@@ -62,23 +62,23 @@ export default function CaseStudiesView({ onOpenAuditModal }) {
       <section className="dc-section" style={{ paddingTop: '4rem', paddingBottom: '3.5rem', borderBottom: '1px solid var(--dc-border)' }}>
         <div className="dc-container" style={{ textAlign: 'center', maxWidth: '800px' }}>
           <span className="dc-badge dc-badge-purple" style={{ marginBottom: '1.25rem' }}>
-            SELECTED WORK & CASE STUDIES
+            OUR WORK
           </span>
           <h1>
-            Real Projects. <span className="dc-text-purple">Real Growth.</span>
+            Systems & Platforms We Have <span className="dc-text-purple">Delivered.</span>
           </h1>
           <p style={{ marginTop: '1.25rem', fontSize: '1.15rem', color: 'var(--dc-text-secondary)' }}>
-            Explore how we partner with category leaders across brand strategy, high-speed web engineering, search intelligence, and performance media.
+            A look at custom websites, internal software, e-commerce storefronts, and digital systems built for growing businesses.
           </p>
 
           {/* Filter Bar */}
           <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', marginTop: '2.5rem', flexWrap: 'wrap' }}>
             {[
               { id: 'all', label: 'All Projects' },
-              { id: 'fintech', label: 'FinTech' },
-              { id: 'saas', label: 'B2B SaaS' },
-              { id: 'ecom', label: 'E-Commerce' },
-              { id: 'health', label: 'Healthcare' },
+              { id: 'real-estate', label: 'Real Estate' },
+              { id: 'healthcare', label: 'Healthcare' },
+              { id: 'ecommerce', label: 'E-Commerce' },
+              { id: 'logistics', label: 'Logistics' },
             ].map(tab => (
               <button
                 key={tab.id}
@@ -153,7 +153,7 @@ export default function CaseStudiesView({ onOpenAuditModal }) {
                     className="dc-btn dc-btn-primary" 
                     style={{ padding: '0.65rem 1.25rem', fontSize: '0.85rem' }}
                   >
-                    <span>Request Proposal</span>
+                    <span>Start a Project</span>
                     <ArrowRight size={14} />
                   </button>
                 </div>

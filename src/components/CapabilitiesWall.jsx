@@ -8,56 +8,56 @@ export default function CapabilitiesWall({ onSelectService }) {
     {
       id: '01',
       code: '01',
-      title: 'Strategy & Brand Identity',
-      category: 'BRAND ARCHITECTURE',
-      description: 'We craft distinctive brand positioning, design systems, and identity frameworks that make your business instantly recognizable and trusted.',
-      features: ['Brand Positioning & Messaging', 'Visual Identity & Design Systems', 'Logo Architecture & Style Guides', 'Brand Collateral & Assets'],
-      metric: 'Distinctive Market Authority'
+      title: 'Website Development',
+      category: 'WEBSITES & WEB APPS',
+      description: 'Fast, responsive business websites, landing pages and web apps built around your brand, your content, and the actual customer journey.',
+      features: ['Business & Corporate Websites', 'High-Converting Landing Pages', 'Custom CMS & Content Management', 'Mobile Responsive & Core Web Vitals'],
+      metric: 'Clean Code & Fast Loads'
     },
     {
       id: '02',
       code: '02',
-      title: 'Websites & E-Commerce',
-      category: 'DIGITAL PLATFORMS',
-      description: 'Sub-second, high-converting digital storefronts and web platforms built on Next.js App Router and modern headless e-commerce stacks.',
-      features: ['Next.js & React Engineering', 'Headless Storefront Systems', 'Page Load & Performance Optimization', 'UI/UX Interactive Prototyping'],
-      metric: 'High-Speed Web Architecture'
+      title: 'Custom Software & CRM',
+      category: 'INTERNAL TOOLS & PORTALS',
+      description: 'Internal tools, admin dashboards, portals and custom CRM/ERP systems tailored to the exact way your team operates day-to-day.',
+      features: ['Custom CRM & Lead Tracking', 'Admin Dashboards & Portals', 'Role-Based Access & Data Tables', 'Inventory & Operations Management'],
+      metric: 'Built for Your Workflow'
     },
     {
       id: '03',
       code: '03',
-      title: 'SEO & AI Search (AEO/GEO)',
-      category: 'ORGANIC VISIBILITY',
-      description: 'Generative Engine Optimization (GEO) & Answer Engine Optimization (AEO). We optimize your entity graph so ChatGPT, Perplexity & Google Gemini cite your brand.',
-      features: ['LLM Entity Authority Seeding', 'Schema & Vector Search Structuring', 'Enterprise Technical Audits', 'Google AI Overview Optimization'],
-      metric: 'AI Search Entity Authority'
+      title: 'Business Automation',
+      category: 'WORKFLOWS & INTEGRATIONS',
+      description: 'If your team is manually copying leads between WhatsApp, Google Sheets, and email, that is exactly what we connect and automate.',
+      features: ['WhatsApp & Email Lead Alerts', 'CRM & Spreadsheet Sync', 'Form & Notification Workflows', 'API Integrations & Webhooks'],
+      metric: 'Zero Manual Busywork'
     },
     {
       id: '04',
       code: '04',
-      title: 'Performance Paid Media',
-      category: 'PAID ACQUISITION',
-      description: 'Data-backed paid search and paid social campaigns engineered around strict cost-per-acquisition (CPA) targets and customer lifetime value.',
-      features: ['Google Search & Shopping Ads', 'Meta & TikTok Paid Social', 'LinkedIn B2B Lead Acquisition', 'Multi-Touch Attribution Modeling'],
-      metric: 'Performance Paid Media Scale'
+      title: 'E-Commerce Systems',
+      category: 'STOREFRONTS & PAYMENTS',
+      description: 'Online stores and catalogue platforms designed for smooth browsing, fast checkout, reliable payment gateways, and straightforward order management.',
+      features: ['Custom Storefronts & Catalogues', 'Payment Gateway Integration', 'Order Flow & Cart Experience', 'B2B Wholesale & Pricing Rules'],
+      metric: 'Smooth Checkout Flows'
     },
     {
       id: '05',
       code: '05',
-      title: 'Video & Creative Studio',
-      category: 'HIGH-SCALE CREATIVE',
-      description: 'High-velocity UGC ad production, creator campaigns, and corporate films designed to drive engagement and conversion across social feeds.',
-      features: ['Short-Form Social Reels & Shorts', 'Creator-Led UGC Ad Pipelines', 'Scriptwriting & Storyboarding', 'Multi-Language Localization'],
-      metric: 'High-Velocity Creative Pipeline'
+      title: 'Search & Visibility (SEO)',
+      category: 'SEARCH & LOCAL DISCOVERY',
+      description: 'Clean technical SEO, on-page structure, speed optimization, and local search visibility so potential clients can actually find you on Google.',
+      features: ['Technical & On-Page SEO', 'Google Business Profile & Local SEO', 'Speed & Mobile Optimization', 'Search Analytics & Clear Reporting'],
+      metric: 'Clean Search Structure'
     },
     {
       id: '06',
       code: '06',
-      title: 'AI & Automation Systems',
-      category: 'OPERATIONAL EFFICIENCY',
-      description: 'Custom AI workflows, automated CRM funnels, and conversion rate optimization (CRO) engines that eliminate operational friction.',
-      features: ['Custom AI Workflow Integrations', 'Automated Lead Qualification', 'A/B Multivariate Testing', 'Session Analytics & Friction Removal'],
-      metric: 'Conversion Rate Optimization'
+      title: 'Social Media & Content',
+      category: 'CONTENT & VIDEO EDITING',
+      description: 'Content planning, reels, video edits, graphic posts and regular publishing for brands that want consistent social presence without freelancer chaos.',
+      features: ['Reel Editing & Short-Form Video', 'Post Design & Content Calendars', 'Page & Profile Management', 'Ad Creative & Launch Support'],
+      metric: 'Consistent Execution'
     }
   ]);
 
@@ -91,14 +91,14 @@ export default function CapabilitiesWall({ onSelectService }) {
         <div style={{ marginBottom: '3.5rem', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1.5rem' }}>
           <div>
             <div className="dc-badge dc-badge-purple" style={{ marginBottom: '1rem' }}>
-              EXCELLENCE IN EXECUTION
+              WHAT WE DO
             </div>
             <h2>
               Our Core Service <span className="dc-text-purple">Capabilities.</span>
             </h2>
           </div>
           <p style={{ maxWidth: '480px', color: 'var(--dc-text-secondary)', fontSize: '1.05rem' }}>
-            We bring strategy, design, technology, and performance marketing under one unified execution system.
+            Fast websites, custom software, workflow automation and social content built for how your business actually runs.
           </p>
         </div>
 
@@ -185,7 +185,7 @@ export default function CapabilitiesWall({ onSelectService }) {
                 marginBottom: '1.75rem'
               }}>
                 <span style={{ fontSize: '0.72rem', color: '#737373', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  KEY CAPABILITY OUTCOME
+                  WHAT WE DELIVER
                 </span>
                 <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--dc-purple)', marginTop: '0.2rem' }}>
                   ⚡ {activeService.metric}

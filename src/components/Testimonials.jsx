@@ -1,31 +1,47 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MousePointer, ChevronLeft, ChevronRight } from 'lucide-react';
+import { getTestimonials } from '../api/public';
 
 export default function Testimonials() {
   const [activeIdx, setActiveIdx] = useState(0);
 
-  const testimonials = [
+  const [testimonials, setTestimonials] = useState([
     {
-      quote: "DigitalClik completely transformed our online presence and search footprint. They engineered a sub-second Next.js web application and positioned us as a recommended solution across AI search engines.",
-      author: "Marcus Vance",
-      title: "Chief Marketing Officer",
-      company: "NexoPay Global"
+      quote: "Every project starts with a different problem. Our job is to understand it properly, build what is actually needed, and stay involved until it works.",
+      author: "Direct Communication",
+      title: "Accountability",
+      company: "DigitalClik Practice"
     },
     {
-      quote: "The strategic clarity and design execution DigitalClik brought to CloudScale was unmatched. Their performance campaigns scaled our demo pipeline volume while optimizing our acquisition costs.",
-      author: "Elena Rostova",
-      title: "VP of Growth & Strategy",
-      company: "CloudScale AI"
+      quote: "We do not build and vanish. When your team needs updates, bug fixes, or a new feature three months down the line, we are still here to support you.",
+      author: "Reliable Support",
+      title: "Long-Term Backup",
+      company: "DigitalClik Practice"
     },
     {
-      quote: "Working with DigitalClik feels like having an elite internal product and creative team. Their UGC ad studio and web engineering enabled us to achieve strong e-commerce growth.",
-      author: "Julian Sterling",
-      title: "Founder & CEO",
-      company: "Verve Luxury Group"
+      quote: "Code you can actually maintain. No messy spaghetti code, no locked-in proprietary traps, and complete handover of all accounts, designs, and repositories.",
+      author: "Full Ownership",
+      title: "Clean Handover",
+      company: "DigitalClik Practice"
     }
-  ];
+  ]);
 
-  const current = testimonials[activeIdx];
+  useEffect(() => {
+    getTestimonials()
+      .then(res => {
+        if (res.success && res.data && res.data.length > 0) {
+          setTestimonials(res.data.map(t => ({
+            quote: t.quote,
+            author: t.author,
+            title: t.title,
+            company: t.company
+          })));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const current = testimonials[activeIdx] || testimonials[0];
 
   const nextTestimonial = () => {
     setActiveIdx((prev) => (prev + 1) % testimonials.length);
@@ -46,7 +62,7 @@ export default function Testimonials() {
         
         <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
           <span className="dc-badge dc-badge-dark">
-            CLIENT PARTNERSHIP PROOF
+            OUR COMMITMENT
           </span>
         </div>
 
@@ -103,7 +119,7 @@ export default function Testimonials() {
                 cursor: 'pointer',
                 transition: 'background 0.2s'
               }}
-              aria-label="Previous Testimonial"
+              aria-label="Previous Trust Commitment"
             >
               <ChevronLeft size={20} />
             </button>
@@ -127,7 +143,7 @@ export default function Testimonials() {
                 cursor: 'pointer',
                 transition: 'background 0.2s'
               }}
-              aria-label="Next Testimonial"
+              aria-label="Next Trust Commitment"
             >
               <ChevronRight size={20} />
             </button>

@@ -24,6 +24,8 @@ pnpm-debug.log*
 *.db
 *.db-journal
 prisma/dev.db
+*.sql
+*.dump
 
 # Temp
 tmp/

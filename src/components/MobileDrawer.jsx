@@ -92,19 +92,22 @@ export default function MobileDrawer({ isOpen, onClose, setActivePage, onOpenAud
             {openSection === 'services' && (
               <div style={{ paddingLeft: '1rem', marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 <a onClick={() => handleLinkClick('services')} style={{ color: 'var(--dc-purple)', fontWeight: 600, fontSize: '0.95rem', cursor: 'pointer' }}>
-                  SEO & AI Search (AEO/GEO)
+                  Website Development
                 </a>
                 <a onClick={() => handleLinkClick('services')} style={{ color: '#4A4A4A', fontSize: '0.95rem', cursor: 'pointer' }}>
-                  Performance Paid Media
+                  Custom Software & CRM
                 </a>
                 <a onClick={() => handleLinkClick('services')} style={{ color: '#4A4A4A', fontSize: '0.95rem', cursor: 'pointer' }}>
-                  Brand Strategy & Creative
+                  Business Automation
                 </a>
                 <a onClick={() => handleLinkClick('services')} style={{ color: '#4A4A4A', fontSize: '0.95rem', cursor: 'pointer' }}>
-                  Video & UGC Ad Studio
+                  E-Commerce Systems
                 </a>
                 <a onClick={() => handleLinkClick('services')} style={{ color: '#4A4A4A', fontSize: '0.95rem', cursor: 'pointer' }}>
-                  Custom Web & App Engineering
+                  Search & Visibility (SEO)
+                </a>
+                <a onClick={() => handleLinkClick('services')} style={{ color: '#4A4A4A', fontSize: '0.95rem', cursor: 'pointer' }}>
+                  Social Media & Content
                 </a>
               </div>
             )}
@@ -126,7 +129,7 @@ export default function MobileDrawer({ isOpen, onClose, setActivePage, onOpenAud
                 cursor: 'pointer'
               }}
             >
-              Selected Work
+              Recent Work
             </button>
           </div>
 
@@ -146,7 +149,7 @@ export default function MobileDrawer({ isOpen, onClose, setActivePage, onOpenAud
                 cursor: 'pointer'
               }}
             >
-              Industry Playbooks
+              Industries
             </button>
           </div>
 
@@ -166,7 +169,7 @@ export default function MobileDrawer({ isOpen, onClose, setActivePage, onOpenAud
                 cursor: 'pointer'
               }}
             >
-              Contact Us
+              Contact
             </button>
           </div>
 

@@ -65,7 +65,7 @@ export default function Navbar({ activePage, setActivePage, onOpenAuditModal, on
               textTransform: 'uppercase',
               marginTop: '2px'
             }}>
-              Creative & Growth Agency
+              Digital Studio & Systems
             </span>
           </div>
         </div>
@@ -119,65 +119,65 @@ export default function Navbar({ activePage, setActivePage, onOpenAuditModal, on
                 zIndex: 1000
               }}>
                 
-                {/* Column 01: Marketing & Growth */}
+                {/* Column 01: Websites & Web Apps */}
                 <div>
                   <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--dc-purple)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '1.25rem' }}>
-                    01 • Marketing & Growth
+                    01 • Websites & Apps
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
                     <a href="#services" onClick={() => handleNavClick('services')} style={{ textDecoration: 'none' }}>
-                      <div style={{ color: '#0A0A0A', fontWeight: 700, fontSize: '0.92rem' }}>SEO & AI Search (AEO/GEO)</div>
-                      <span style={{ fontSize: '0.8rem', color: '#666666' }}>Entity optimization & ranking authority</span>
+                      <div style={{ color: '#0A0A0A', fontWeight: 700, fontSize: '0.92rem' }}>Business Websites</div>
+                      <span style={{ fontSize: '0.8rem', color: '#666666' }}>Fast, responsive sites built for your brand</span>
                     </a>
                     <a href="#services" onClick={() => handleNavClick('services')} style={{ textDecoration: 'none' }}>
-                      <div style={{ color: '#0A0A0A', fontWeight: 700, fontSize: '0.92rem' }}>Performance Paid Media</div>
-                      <span style={{ fontSize: '0.8rem', color: '#666666' }}>Google Ads, Meta & LinkedIn acquisition</span>
+                      <div style={{ color: '#0A0A0A', fontWeight: 700, fontSize: '0.92rem' }}>Landing Pages</div>
+                      <span style={{ fontSize: '0.8rem', color: '#666666' }}>High-converting campaign landing pages</span>
                     </a>
                     <a href="#services" onClick={() => handleNavClick('services')} style={{ textDecoration: 'none' }}>
-                      <div style={{ color: '#0A0A0A', fontWeight: 700, fontSize: '0.92rem' }}>Conversion Optimization</div>
-                      <span style={{ fontSize: '0.8rem', color: '#666666' }}>A/B testing & checkout friction lift</span>
+                      <div style={{ color: '#0A0A0A', fontWeight: 700, fontSize: '0.92rem' }}>Custom Web Apps</div>
+                      <span style={{ fontSize: '0.8rem', color: '#666666' }}>Modern React & Node.js application builds</span>
                     </a>
                   </div>
                 </div>
 
-                {/* Column 02: Brand & Creative */}
+                {/* Column 02: Software & Automation */}
                 <div>
                   <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--dc-purple)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '1.25rem' }}>
-                    02 • Brand & Creative
+                    02 • Software & Workflows
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
                     <a href="#services" onClick={() => handleNavClick('services')} style={{ textDecoration: 'none' }}>
-                      <div style={{ color: '#0A0A0A', fontWeight: 700, fontSize: '0.92rem' }}>Brand Strategy & Identity</div>
-                      <span style={{ fontSize: '0.8rem', color: '#666666' }}>Positioning, design systems & identity</span>
+                      <div style={{ color: '#0A0A0A', fontWeight: 700, fontSize: '0.92rem' }}>Custom CRM & Portals</div>
+                      <span style={{ fontSize: '0.8rem', color: '#666666' }}>Internal dashboards and client portals</span>
                     </a>
                     <a href="#services" onClick={() => handleNavClick('services')} style={{ textDecoration: 'none' }}>
-                      <div style={{ color: '#0A0A0A', fontWeight: 700, fontSize: '0.92rem' }}>Video & UGC Ad Studio</div>
-                      <span style={{ fontSize: '0.8rem', color: '#666666' }}>High-scale viral social reel creative</span>
+                      <div style={{ color: '#0A0A0A', fontWeight: 700, fontSize: '0.92rem' }}>Business Automation</div>
+                      <span style={{ fontSize: '0.8rem', color: '#666666' }}>WhatsApp, Sheets and CRM lead sync</span>
                     </a>
                     <a href="#services" onClick={() => handleNavClick('services')} style={{ textDecoration: 'none' }}>
-                      <div style={{ color: '#0A0A0A', fontWeight: 700, fontSize: '0.92rem' }}>Content Marketing</div>
-                      <span style={{ fontSize: '0.8rem', color: '#666666' }}>Editorial storytelling & copywriting</span>
+                      <div style={{ color: '#0A0A0A', fontWeight: 700, fontSize: '0.92rem' }}>E-Commerce Systems</div>
+                      <span style={{ fontSize: '0.8rem', color: '#666666' }}>Catalogue, payment and order flows</span>
                     </a>
                   </div>
                 </div>
 
-                {/* Column 03: Web & Technology */}
+                {/* Column 03: Search & Content */}
                 <div>
                   <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--dc-purple)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '1.25rem' }}>
-                    03 • Web & Technology
+                    03 • Search & Content
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
                     <a href="#services" onClick={() => handleNavClick('services')} style={{ textDecoration: 'none' }}>
-                      <div style={{ color: '#0A0A0A', fontWeight: 700, fontSize: '0.92rem' }}>Custom Web Applications</div>
-                      <span style={{ fontSize: '0.8rem', color: '#666666' }}>Next.js, React & Node.js architecture</span>
+                      <div style={{ color: '#0A0A0A', fontWeight: 700, fontSize: '0.92rem' }}>Search & Local SEO</div>
+                      <span style={{ fontSize: '0.8rem', color: '#666666' }}>Technical SEO, structure and local ranking</span>
                     </a>
                     <a href="#services" onClick={() => handleNavClick('services')} style={{ textDecoration: 'none' }}>
-                      <div style={{ color: '#0A0A0A', fontWeight: 700, fontSize: '0.92rem' }}>Headless E-Commerce</div>
-                      <span style={{ fontSize: '0.8rem', color: '#666666' }}>Fast storefronts & seamless checkout</span>
+                      <div style={{ color: '#0A0A0A', fontWeight: 700, fontSize: '0.92rem' }}>Reels & Video Editing</div>
+                      <span style={{ fontSize: '0.8rem', color: '#666666' }}>Short-form video and reels production</span>
                     </a>
                     <a href="#services" onClick={() => handleNavClick('services')} style={{ textDecoration: 'none' }}>
-                      <div style={{ color: '#0A0A0A', fontWeight: 700, fontSize: '0.92rem' }}>Platform Maintenance</div>
-                      <span style={{ fontSize: '0.8rem', color: '#666666' }}>Security, speed & ongoing iteration</span>
+                      <div style={{ color: '#0A0A0A', fontWeight: 700, fontSize: '0.92rem' }}>Content Planning</div>
+                      <span style={{ fontSize: '0.8rem', color: '#666666' }}>Monthly calendars and social publishing</span>
                     </a>
                   </div>
                 </div>
@@ -194,13 +194,13 @@ export default function Navbar({ activePage, setActivePage, onOpenAuditModal, on
                 }}>
                   <div>
                     <div className="dc-badge dc-badge-purple" style={{ marginBottom: '0.75rem' }}>
-                      DIGITALCLIK APPROACH
+                      DIGITALCLIK STUDIO
                     </div>
                     <h4 style={{ color: '#0A0A0A', fontSize: '1rem', marginBottom: '0.4rem', fontWeight: 700 }}>
-                      Strategy Before Execution.
+                      Built Around How You Work.
                     </h4>
                     <p style={{ fontSize: '0.82rem', color: '#555555', lineHeight: 1.5 }}>
-                      We combine creative design, modern technology, and data-backed marketing under one unified partnership.
+                      We design, build and manage the digital side of your business so you can focus on day-to-day operations.
                     </p>
                   </div>
 
@@ -209,7 +209,7 @@ export default function Navbar({ activePage, setActivePage, onOpenAuditModal, on
                     className="dc-btn dc-btn-primary" 
                     style={{ width: '100%', marginTop: '1rem', padding: '0.65rem 1rem', fontSize: '0.85rem' }}
                   >
-                    <span>Start a Project</span>
+                    <span>Start a project</span>
                     <ArrowRight size={14} />
                   </button>
                 </div>
@@ -278,7 +278,7 @@ export default function Navbar({ activePage, setActivePage, onOpenAuditModal, on
             onClick={onOpenAuditModal}
             className="dc-btn dc-btn-primary"
           >
-            <span>Let's Talk</span>
+            <span>Talk to us</span>
             <ArrowRight size={15} />
           </button>
 

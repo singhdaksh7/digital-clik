@@ -30,13 +30,14 @@ export default function ContactView({ onOpenAuditModal }) {
       <section className="dc-section" style={{ paddingTop: '4rem', paddingBottom: '3.5rem', borderBottom: '1px solid var(--dc-border)' }}>
         <div className="dc-container" style={{ textAlign: 'center', maxWidth: '800px' }}>
           <span className="dc-badge dc-badge-purple" style={{ marginBottom: '1.25rem' }}>
-            START A CONVERSATION
+            START A PROJECT
           </span>
           <h1>
-            Let's Make Something <span className="dc-text-purple">Worth Clicking.</span>
+            Have a project in mind? <br />
+            Tell us what you're <span className="dc-text-purple">trying to build.</span>
           </h1>
           <p style={{ marginTop: '1.25rem', fontSize: '1.15rem', color: 'var(--dc-text-secondary)' }}>
-            Speak directly with a senior DigitalClik growth architect. We will review your digital footprint and outline a clear growth roadmap.
+            Need a website, custom software, automation or content support? Send us your brief and we will get back to you within 24 hours.
           </p>
         </div>
       </section>
@@ -49,7 +50,7 @@ export default function ContactView({ onOpenAuditModal }) {
             {/* Left Column: Form */}
             <div className="dc-card" style={{ padding: '2.5rem', background: '#FFFFFF', border: '1px solid var(--dc-border)' }}>
               <h2 style={{ fontSize: '1.5rem', color: '#0A0A0A', marginBottom: '1.5rem' }}>
-                Schedule a 1-on-1 Consultation
+                Tell Us About Your Project
               </h2>
 
               {!submitted ? (
@@ -62,7 +63,7 @@ export default function ContactView({ onOpenAuditModal }) {
                     <input 
                       type="text" 
                       required
-                      placeholder="Alex Mercer"
+                      placeholder="Your name"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       style={{
@@ -85,7 +86,7 @@ export default function ContactView({ onOpenAuditModal }) {
                     <input 
                       type="email" 
                       required
-                      placeholder="alex@company.com"
+                      placeholder="name@company.com"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       style={{
@@ -103,7 +104,7 @@ export default function ContactView({ onOpenAuditModal }) {
 
                   <div>
                     <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#0A0A0A', marginBottom: '0.4rem' }}>
-                      WEBSITE URL *
+                      WEBSITE OR COMPANY URL *
                     </label>
                     <input 
                       type="url" 
@@ -126,11 +127,11 @@ export default function ContactView({ onOpenAuditModal }) {
 
                   <div>
                     <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#0A0A0A', marginBottom: '0.4rem' }}>
-                      PROJECT OVERVIEW / GOALS
+                      PROJECT OVERVIEW / DETAILS
                     </label>
                     <textarea 
                       rows="4"
-                      placeholder="Tell us about your brand goals, target timeline, or current bottlenecks..."
+                      placeholder="Tell us what you need built, your timeline, or where your current setup is stuck..."
                       value={formData.message}
                       onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                       style={{
@@ -152,7 +153,7 @@ export default function ContactView({ onOpenAuditModal }) {
                     className="dc-btn dc-btn-primary"
                     style={{ width: '100%', padding: '0.95rem', fontSize: '1rem' }}
                   >
-                    <span>Send Consultation Inquiry</span>
+                    <span>Send Your Brief</span>
                     <ArrowRight size={18} />
                   </button>
 
@@ -168,10 +169,10 @@ export default function ContactView({ onOpenAuditModal }) {
                     <CheckCircle2 size={32} />
                   </div>
                   <h3 style={{ fontSize: '1.5rem', color: '#0A0A0A', marginBottom: '0.5rem' }}>
-                    Consultation Requested!
+                    Brief Received!
                   </h3>
                   <p style={{ color: '#666666', fontSize: '0.95rem' }}>
-                    Thank you. Our team is reviewing {formData.website}. A calendar invite has been sent to {formData.email}.
+                    Thank you. We have received your project details and will review {formData.website}. Our team will reply to {formData.email} within 24 hours.
                   </p>
                 </div>
               )}
@@ -188,7 +189,7 @@ export default function ContactView({ onOpenAuditModal }) {
                   <div className="dc-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', background: '#FFFFFF' }}>
                     <Phone size={24} style={{ color: 'var(--dc-purple)' }} />
                     <div>
-                      <div style={{ fontSize: '0.78rem', color: '#737373', fontWeight: 700 }}>24/7 CLIENT DIRECT LINE</div>
+                      <div style={{ fontSize: '0.78rem', color: '#737373', fontWeight: 700 }}>DIRECT PHONE</div>
                       <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#0A0A0A' }}>+1 (800) 555-CLIK</div>
                     </div>
                   </div>
@@ -196,7 +197,7 @@ export default function ContactView({ onOpenAuditModal }) {
                   <div className="dc-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', background: '#FFFFFF' }}>
                     <Mail size={24} style={{ color: 'var(--dc-purple)' }} />
                     <div>
-                      <div style={{ fontSize: '0.78rem', color: '#737373', fontWeight: 700 }}>INQUIRIES & PROPOSALS</div>
+                      <div style={{ fontSize: '0.78rem', color: '#737373', fontWeight: 700 }}>INQUIRIES & PROJECT BRIEFS</div>
                       <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#0A0A0A' }}>hello@digitalclik.com</div>
                     </div>
                   </div>
@@ -206,10 +207,10 @@ export default function ContactView({ onOpenAuditModal }) {
               {/* Agency Operations Notice */}
               <div className="dc-card" style={{ padding: '1.5rem', background: 'var(--dc-bg-soft)', border: '1px solid var(--dc-border)' }}>
                 <h4 style={{ color: '#0A0A0A', fontSize: '1rem', marginBottom: '0.5rem', fontWeight: 700 }}>
-                  Global Operational Hours
+                  Studio Location & Hours
                 </h4>
                 <p style={{ fontSize: '0.88rem', color: '#555555', lineHeight: 1.6 }}>
-                  Our strategy and engineering teams operate across Eastern Time (US), Greenwich Mean Time (UK), and Indian Standard Time (IST) for global client coverage.
+                  DigitalClik Studio • Delhi NCR, India. Monday to Saturday: 10:00 AM – 7:00 PM IST. Working with clients across India and globally.
                 </p>
               </div>
 

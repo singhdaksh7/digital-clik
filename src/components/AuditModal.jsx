@@ -100,13 +100,13 @@ export default function AuditModal({ isOpen, onClose }) {
             {/* Header */}
             <div style={{ marginBottom: '1.5rem' }}>
               <span className="dc-badge dc-badge-purple" style={{ marginBottom: '0.6rem' }}>
-                DIGITALCLIK CONSULTATION
+                START A PROJECT
               </span>
               <h2 style={{ fontSize: '1.75rem', color: '#0A0A0A' }}>
-                Start a Growth Project with <span className="dc-text-purple">DigitalClik</span>
+                Tell us what you are <span className="dc-text-purple">trying to build.</span>
               </h2>
               <p style={{ fontSize: '0.92rem', color: '#666666', marginTop: '0.4rem' }}>
-                Share your website and growth goals. Our senior strategists will review your current search footprint and marketing architecture.
+                Share a few details about your project or current setup. We will review it and get back to you with honest feedback and next steps.
               </p>
             </div>
 
@@ -122,7 +122,7 @@ export default function AuditModal({ isOpen, onClose }) {
                 <>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#0A0A0A', marginBottom: '0.4rem' }}>
-                      YOUR WEBSITE OR DOMAIN URL *
+                      YOUR WEBSITE OR COMPANY URL *
                     </label>
                     <div style={{ position: 'relative' }}>
                       <Globe size={16} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#737373' }} />
@@ -180,7 +180,7 @@ export default function AuditModal({ isOpen, onClose }) {
                       <Phone size={16} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#737373' }} />
                       <input 
                         type="tel" 
-                        placeholder="+1 (555) 000-0000" 
+                        placeholder="+91 98765 43210" 
                         value={formData.phone}
                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                         style={{
@@ -202,7 +202,7 @@ export default function AuditModal({ isOpen, onClose }) {
                     className="dc-btn dc-btn-primary" 
                     style={{ width: '100%', padding: '0.9rem', fontSize: '0.95rem', marginTop: '0.5rem' }}
                   >
-                    <span>Continue to Project Options</span>
+                    <span>Next: Project Details</span>
                     <ArrowRight size={16} />
                   </button>
                 </>
@@ -213,7 +213,7 @@ export default function AuditModal({ isOpen, onClose }) {
                       SELECT PRIMARY AREAS OF INTEREST:
                     </label>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}>
-                      {['Strategy & Brand', 'SEO & AI Search', 'Paid PPC & Social', 'Video Studio & UGC', 'Custom Web Apps', 'CRO & Funnels'].map((svc) => (
+                      {['Website Development', 'Custom Software & CRM', 'Business Automation', 'E-Commerce Systems', 'Search & SEO', 'Social Media & Content'].map((svc) => (
                         <div 
                           key={svc}
                           onClick={() => toggleService(svc)}
@@ -240,7 +240,7 @@ export default function AuditModal({ isOpen, onClose }) {
 
                   <div>
                     <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#0A0A0A', marginBottom: '0.4rem' }}>
-                      ESTIMATED MONTHLY MARKETING / TECH SPEND
+                      ESTIMATED PROJECT BUDGET
                     </label>
                     <select 
                       value={formData.monthlySpend}
@@ -256,10 +256,10 @@ export default function AuditModal({ isOpen, onClose }) {
                         outline: 'none'
                       }}
                     >
-                      <option value="Under $5,000">Under $5,000 / mo</option>
-                      <option value="$5,000 - $10,000">$5,000 - $10,000 / mo</option>
-                      <option value="$10,000 - $25,000">$10,000 - $25,000 / mo</option>
-                      <option value="$25,000 - $100,000">$25,000 - $100,000 / mo</option>
+                      <option value="Under ₹50,000">Under ₹50,000 / $1,000</option>
+                      <option value="₹50,000 - ₹1.5 Lakh">₹50,000 – ₹1.5 Lakh / $1,000 – $2,500</option>
+                      <option value="₹1.5 Lakh - ₹5 Lakh">₹1.5 Lakh – ₹5 Lakh / $2,500 – $6,000</option>
+                      <option value="₹5 Lakh+">₹5 Lakh+ / $6,000+</option>
                     </select>
                   </div>
 
@@ -278,7 +278,7 @@ export default function AuditModal({ isOpen, onClose }) {
                       className="dc-btn dc-btn-primary" 
                       style={{ flex: 2 }}
                     >
-                      <span>Submit Consultation Request</span>
+                      <span>Send Project Brief</span>
                       <ArrowRight size={16} />
                     </button>
                   </div>
@@ -299,11 +299,11 @@ export default function AuditModal({ isOpen, onClose }) {
             </div>
 
             <h2 style={{ fontSize: '1.8rem', color: '#0A0A0A', marginBottom: '0.5rem' }}>
-              Request Received!
+              Brief Received!
             </h2>
 
             <p style={{ color: '#666666', fontSize: '0.98rem', marginBottom: '1.5rem', lineHeight: 1.6 }}>
-              Our senior strategy team is reviewing <strong>{formData.website}</strong>. You will receive your consultation details at <strong>{formData.email}</strong> shortly.
+              Our team will review your project requirements for <strong>{formData.website}</strong> and reply directly to <strong>{formData.email}</strong> within 24 hours.
             </p>
 
             <button 
@@ -311,7 +311,7 @@ export default function AuditModal({ isOpen, onClose }) {
               className="dc-btn dc-btn-primary" 
               style={{ padding: '0.85rem 2rem' }}
             >
-              Return to DigitalClik
+              Back to Site
             </button>
           </div>
         )}

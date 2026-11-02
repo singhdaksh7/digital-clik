@@ -27,7 +27,7 @@ export default function Footer({ setActivePage, onOpenAuditModal }) {
             textTransform: 'uppercase',
             marginBottom: '1.5rem'
           }}>
-            READY TO GROW?
+            START A PROJECT
           </div>
 
           <h2 style={{
@@ -38,12 +38,12 @@ export default function Footer({ setActivePage, onOpenAuditModal }) {
             letterSpacing: '-0.03em',
             marginBottom: '1.5rem'
           }}>
-            Got a project in mind? <br />
-            Let's make something worth clicking.
+            Have a project in mind? <br />
+            Tell us what you're trying to build.
           </h2>
 
           <p style={{ color: 'rgba(255, 255, 255, 0.88)', fontSize: '1.15rem', marginBottom: '2.5rem', maxWidth: '600px', margin: '0 auto 2.5rem auto' }}>
-            We work with ambitious brand partners across search, paid media, creative studio, and web technology.
+            Websites, software, automations and digital content — built around how your business actually works.
           </p>
 
           <button 
@@ -65,7 +65,7 @@ export default function Footer({ setActivePage, onOpenAuditModal }) {
               transition: 'transform 0.25s ease, box-shadow 0.25s ease'
             }}
           >
-            <span>Start a Project</span>
+            <span>Start a project</span>
             <ArrowRight size={18} />
           </button>
 
@@ -101,7 +101,7 @@ export default function Footer({ setActivePage, onOpenAuditModal }) {
               </div>
 
               <p style={{ fontSize: '0.88rem', color: '#999999', lineHeight: 1.6, marginBottom: '1.75rem', maxWidth: '320px' }}>
-                DigitalClik is a modern digital agency combining brand strategy, web engineering, and growth marketing for market leaders.
+                Design, development, automation and digital execution. A Delhi NCR digital studio building practical systems for growing businesses.
               </p>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', fontSize: '0.88rem', color: '#CCCCCC' }}>
@@ -122,37 +122,39 @@ export default function Footer({ setActivePage, onOpenAuditModal }) {
                 Capabilities
               </h4>
               <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.88rem', color: '#999999' }}>
-                <li><a onClick={() => setActivePage('services')} style={{ cursor: 'pointer', transition: 'color 0.2s' }}>Strategy & Brand</a></li>
-                <li><a onClick={() => setActivePage('services')} style={{ cursor: 'pointer', transition: 'color 0.2s' }}>Websites & E-Commerce</a></li>
-                <li><a onClick={() => setActivePage('services')} style={{ cursor: 'pointer', transition: 'color 0.2s' }}>SEO & AI Search (AEO/GEO)</a></li>
-                <li><a onClick={() => setActivePage('services')} style={{ cursor: 'pointer', transition: 'color 0.2s' }}>Performance Paid Media</a></li>
-                <li><a onClick={() => setActivePage('services')} style={{ cursor: 'pointer', transition: 'color 0.2s' }}>Video & UGC Ad Studio</a></li>
+                <li><a onClick={() => setActivePage('services')} style={{ cursor: 'pointer', transition: 'color 0.2s' }}>Website Development</a></li>
+                <li><a onClick={() => setActivePage('services')} style={{ cursor: 'pointer', transition: 'color 0.2s' }}>Custom Software & CRM</a></li>
+                <li><a onClick={() => setActivePage('services')} style={{ cursor: 'pointer', transition: 'color 0.2s' }}>Business Automation</a></li>
+                <li><a onClick={() => setActivePage('services')} style={{ cursor: 'pointer', transition: 'color 0.2s' }}>E-Commerce Systems</a></li>
+                <li><a onClick={() => setActivePage('services')} style={{ cursor: 'pointer', transition: 'color 0.2s' }}>Search & Visibility (SEO)</a></li>
+                <li><a onClick={() => setActivePage('services')} style={{ cursor: 'pointer', transition: 'color 0.2s' }}>Social Media & Content</a></li>
               </ul>
             </div>
 
             {/* Navigation Column 2: Sectors */}
             <div>
               <h4 style={{ color: '#FFFFFF', fontSize: '0.85rem', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '1.25rem' }}>
-                Sectors
+                Industries
               </h4>
               <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.88rem', color: '#999999' }}>
-                <li><a onClick={() => setActivePage('industries')} style={{ cursor: 'pointer' }}>B2B & Enterprise SaaS</a></li>
-                <li><a onClick={() => setActivePage('industries')} style={{ cursor: 'pointer' }}>E-Commerce & DTC Retail</a></li>
-                <li><a onClick={() => setActivePage('industries')} style={{ cursor: 'pointer' }}>FinTech & Banking</a></li>
-                <li><a onClick={() => setActivePage('industries')} style={{ cursor: 'pointer' }}>Healthcare & MedTech</a></li>
-                <li><a onClick={() => setActivePage('industries')} style={{ cursor: 'pointer' }}>Real Estate & PropTech</a></li>
+                <li><a onClick={() => setActivePage('industries')} style={{ cursor: 'pointer' }}>Real Estate</a></li>
+                <li><a onClick={() => setActivePage('industries')} style={{ cursor: 'pointer' }}>Healthcare</a></li>
+                <li><a onClick={() => setActivePage('industries')} style={{ cursor: 'pointer' }}>E-Commerce & Retail</a></li>
+                <li><a onClick={() => setActivePage('industries')} style={{ cursor: 'pointer' }}>Education</a></li>
+                <li><a onClick={() => setActivePage('industries')} style={{ cursor: 'pointer' }}>Professional Services</a></li>
+                <li><a onClick={() => setActivePage('industries')} style={{ cursor: 'pointer' }}>Startups & Growing Firms</a></li>
               </ul>
             </div>
 
             {/* Navigation Column 3: Agency */}
             <div>
               <h4 style={{ color: '#FFFFFF', fontSize: '0.85rem', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '1.25rem' }}>
-                Agency
+                Studio
               </h4>
               <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.88rem', color: '#999999' }}>
-                <li><a onClick={() => setActivePage('case-studies')} style={{ cursor: 'pointer' }}>Selected Work</a></li>
+                <li><a onClick={() => setActivePage('case-studies')} style={{ cursor: 'pointer' }}>Recent Work</a></li>
                 <li><a onClick={() => setActivePage('contact')} style={{ cursor: 'pointer' }}>Contact & Inquiry</a></li>
-                <li><a onClick={onOpenAuditModal} style={{ cursor: 'pointer' }}>Request Growth Audit</a></li>
+                <li><a onClick={onOpenAuditModal} style={{ cursor: 'pointer' }}>Start a Project</a></li>
               </ul>
             </div>
 
@@ -171,7 +173,7 @@ export default function Footer({ setActivePage, onOpenAuditModal }) {
             color: '#666666'
           }}>
             <div>
-              © {new Date().getFullYear()} DigitalClik Agency. All Rights Reserved. Pure Brand Identity.
+              © {new Date().getFullYear()} DigitalClik Studio. Design, development & digital systems.
             </div>
 
             <div style={{ display: 'flex', gap: '1.5rem' }}>

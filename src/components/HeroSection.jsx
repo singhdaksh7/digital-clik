@@ -4,18 +4,18 @@ import { getHomepageData } from '../api/public';
 
 export default function HeroSection({ onOpenAuditModal }) {
   const [heroData, setHeroData] = useState({
-    eyebrow: 'CREATIVE STUDIO & DIGITAL AGENCY',
+    eyebrow: 'DIGITAL STUDIO & EXECUTION TEAM',
     headlineLine1: 'DIGITAL',
     headlineLine2: 'THAT MAKES',
     headlineLine3: 'PEOPLE',
     highlightedWord: 'CLICK.',
-    description: 'DigitalClik builds category-defining brand identities, sub-second web platforms, and search-driven acquisition systems for ambitious companies worldwide.'
+    description: 'Websites, custom software, automations and digital content built around how your business actually works.'
   });
 
   const [heroFrames, setHeroFrames] = useState([
-    { id: '1', url: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1000&q=80', label: 'NEXT.JS / WEB PLATFORM' },
-    { id: '2', url: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80', label: 'MOBILE & APP' },
-    { id: '3', url: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=800&q=80', label: 'BRAND & CREATIVE' }
+    { id: '1', url: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1000&q=80', label: 'WEBSITES & WEB APPS' },
+    { id: '2', url: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80', label: 'CUSTOM SOFTWARE & TOOLS' },
+    { id: '3', url: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=800&q=80', label: 'CONTENT & SOCIAL CREATIVE' }
   ]);
 
   useEffect(() => {
@@ -95,7 +95,7 @@ export default function HeroSection({ onOpenAuditModal }) {
                 className="dc-btn dc-btn-primary" 
                 style={{ padding: '1.1rem 2.5rem', fontSize: '1.05rem', borderRadius: '8px' }}
               >
-                <span>LET'S WORK TOGETHER</span>
+                <span>START A PROJECT</span>
                 <ArrowRight size={18} />
               </button>
 
@@ -104,7 +104,7 @@ export default function HeroSection({ onOpenAuditModal }) {
                 className="dc-btn dc-btn-secondary" 
                 style={{ padding: '1.1rem 2.25rem', fontSize: '1.05rem', borderRadius: '8px' }}
               >
-                <span>EXPLORE WORK</span>
+                <span>SEE OUR WORK</span>
                 <ArrowUpRight size={18} />
               </a>
             </div>
@@ -152,7 +152,7 @@ export default function HeroSection({ onOpenAuditModal }) {
                   gap: '0.4rem'
                 }}>
                   <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--dc-purple)' }} />
-                  NEXT.JS / WEB PLATFORM
+                  {heroFrames[0]?.label || 'WEBSITES & WEB APPS'}
                 </div>
               </div>
 
@@ -170,7 +170,7 @@ export default function HeroSection({ onOpenAuditModal }) {
               }}>
                 <img 
                   src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80" 
-                  alt="Mobile Experience"
+                  alt="Custom Software & Tools"
                   style={{
                     width: '100%',
                     height: '100%',
@@ -188,7 +188,7 @@ export default function HeroSection({ onOpenAuditModal }) {
                   fontSize: '0.7rem',
                   fontWeight: 800
                 }}>
-                  MOBILE & APP
+                  {heroFrames[1]?.label || 'CUSTOM SOFTWARE & TOOLS'}
                 </div>
               </div>
 
@@ -205,7 +205,7 @@ export default function HeroSection({ onOpenAuditModal }) {
               }}>
                 <img 
                   src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=800&q=80" 
-                  alt="Brand Identity"
+                  alt="Content & Social Creative"
                   style={{
                     width: '100%',
                     height: '100%',
@@ -223,7 +223,7 @@ export default function HeroSection({ onOpenAuditModal }) {
                   fontSize: '0.7rem',
                   fontWeight: 800
                 }}>
-                  BRAND & CREATIVE
+                  {heroFrames[2]?.label || 'CONTENT & SOCIAL CREATIVE'}
                 </div>
               </div>
 

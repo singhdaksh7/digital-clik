@@ -2,19 +2,19 @@ import React from 'react';
 
 export default function TrustAndMetrics() {
   const pillars = [
-    { title: 'Brand Architecture', desc: 'Strategic positioning, visual identity & design systems' },
-    { title: 'Web Platforms', desc: 'Sub-second performance & Next.js applications' },
-    { title: 'Search Intelligence', desc: 'AEO, GEO & LLM entity authority optimization' },
-    { title: 'Acquisition Scale', desc: 'Data-backed performance & multi-channel paid media' },
+    { title: 'Websites & Web Apps', desc: 'Fast, custom websites and web portals built around your actual user journey.' },
+    { title: 'Custom Software & CRM', desc: 'Internal tools, admin dashboards and workflows that save hours every week.' },
+    { title: 'Search & Visibility', desc: 'Clean technical SEO, local visibility and content structure people actually read.' },
+    { title: 'Content & Social', desc: 'Reels, posts, video edits and day-to-day publishing handled by one team.' },
   ];
 
   const capabilities = [
-    'STRATEGY & BRAND ARCHITECTURE',
-    'SUB-SECOND WEB ENGINEERING',
-    'AI SEARCH & ENTITY AUTHORITY (AEO/GEO)',
-    'PERFORMANCE PAID MEDIA',
-    'HIGH-SCALE CREATIVE STUDIO',
-    'AUTOMATION & CRO ENGINES'
+    'CUSTOM WEBSITES',
+    'BUSINESS SOFTWARE & CRM',
+    'WORKFLOW AUTOMATION',
+    'SEARCH & LOCAL SEO',
+    'CONTENT PLANNING & REELS',
+    'ECOMMERCE SYSTEMS'
   ];
 
   return (
@@ -24,7 +24,7 @@ export default function TrustAndMetrics() {
         {/* Brand Manifesto Text Moment */}
         <div style={{ textAlign: 'center', maxWidth: '850px', margin: '0 auto 4.5rem auto' }}>
           <span className="dc-badge dc-badge-purple" style={{ marginBottom: '1.25rem' }}>
-            DIGITALCLIK MANIFESTO
+            DIGITALCLIK APPROACH
           </span>
           <blockquote style={{
             fontFamily: 'var(--dc-font-heading)',
@@ -34,7 +34,7 @@ export default function TrustAndMetrics() {
             color: '#0A0A0A',
             letterSpacing: '-0.03em'
           }}>
-            “We combine creative thinking, modern technology, and growth strategy to build brands that <span className="dc-text-purple">move.</span>”
+            “Good design is only the start. If the system and workflow behind it don't solve real operational problems, it's just <span className="dc-text-purple">decoration.</span>”
           </blockquote>
         </div>
 
@@ -73,7 +73,7 @@ export default function TrustAndMetrics() {
         {/* Agency Capability Marquee Banner */}
         <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
           <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#737373', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-            INTEGRATED CREATIVE STUDIO, WEB ENGINEERING & PERFORMANCE ACQUISITION
+            DESIGN, DEVELOPMENT, AUTOMATION AND DIGITAL EXECUTION UNDER ONE ROOF
           </span>
         </div>
 

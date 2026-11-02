@@ -11,18 +11,18 @@ export default function SettingsCMS() {
     phone: '+1 (800) 555-CLIK',
     whatsapp: '+18005552545',
     address: 'DigitalClik Headquarters',
-    city: 'New York',
-    state: 'NY',
-    country: 'USA',
-    defaultMetaTitle: '',
-    defaultMetaDescription: ''
+    city: 'New Delhi',
+    state: 'Delhi',
+    country: 'India',
+    defaultMetaTitle: 'DigitalClik | Websites, Software & Digital Services',
+    defaultMetaDescription: 'DigitalClik builds websites, custom software, workflow automation and digital content for businesses that need one reliable team to handle the work.'
   });
 
   const [announcement, setAnnouncement] = useState({
     enabled: true,
-    text: 'AI Search Authority (AEO/GEO) & High-Speed Web Platforms',
-    linkText: 'EXPLORE AUDIT ↗',
-    linkUrl: '#audit'
+    text: 'Websites, custom software, automations and digital content built for real business needs.',
+    linkText: 'TALK TO US ↗',
+    linkUrl: '#contact'
   });
 
   const [loading, setLoading] = useState(true);

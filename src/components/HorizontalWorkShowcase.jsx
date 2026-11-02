@@ -7,39 +7,39 @@ export default function HorizontalWorkShowcase({ onHoverCursor }) {
   const [projects, setProjects] = useState([
     {
       id: 'p1',
-      client: 'NexoPay Banking',
-      category: 'FINTECH PLATFORM',
-      title: 'Digital Banking System & AI Search Engine Authority',
+      client: 'Real Estate Sales Team',
+      category: 'PROPERTY CRM & PORTAL',
+      title: 'Custom Lead Management & Property Portal',
       year: '2026',
-      metric: 'SEO & Organic Growth',
+      metric: 'Lead Workflow & CRM',
       layout: 'full',
       image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80',
-      summary: 'Re-architected NexoPay\'s digital search presence and customer portal, capturing high-intent financial queries and scaling monthly digital transactions.',
-      deliverables: ['AI Search Entity Structuring', 'Next.js Web Portal Development', 'B2B Acquisition Campaign']
+      summary: 'Centralized property CRM and listing portal built for a real estate sales team to manage incoming inquiries, client requirements, follow-ups, and site visits in one place.',
+      deliverables: ['Custom CRM Dashboard', 'WhatsApp Lead Capture', 'Client Follow-up Tracker', 'Responsive Property Portal']
     },
     {
       id: 'p2',
-      client: 'CloudScale AI',
-      category: 'ENTERPRISE SAAS',
-      title: 'Enterprise ABM Acquisition & Performance Media Scale',
+      client: 'Diagnostic & Clinic Network',
+      category: 'PATIENT BOOKING WEB APP',
+      title: 'Clinic Booking & Patient Records Dashboard',
       year: '2025',
-      metric: 'Performance Marketing',
+      metric: 'Direct Booking System',
       layout: 'split',
       image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1000&q=80',
-      summary: 'Deployed targeted LinkedIn and Google Search account-based campaigns to acquire Fortune 500 infrastructure and CTO leads.',
-      deliverables: ['LinkedIn ABM Campaigns', 'Google Search Infrastructure', 'CRO & Landing Page Optimization']
+      summary: 'Fast patient scheduling interface and clinic management dashboard allowing front-desk staff and patients to coordinate appointments without manual phone tag.',
+      deliverables: ['Appointment Scheduling Engine', 'Doctor Slot Management', 'Automated SMS/WhatsApp Confirmations', 'Admin Reception Panel']
     },
     {
       id: 'p3',
-      client: 'Verve Luxury',
-      category: 'DIRECT-TO-CONSUMER',
-      title: 'Omnichannel Storefront & UGC Creative Studio',
+      client: 'Direct-to-Consumer Apparel Brand',
+      category: 'STOREFRONT & CONTENT',
+      title: 'Custom Shopify Storefront & Social Content Engine',
       year: '2025',
-      metric: 'Omnichannel Ad Scale',
+      metric: 'Storefront & Content',
       layout: 'bleed',
       image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1400&q=80',
-      summary: 'Built high-velocity creator UGC video ad pipelines releasing multi-angle variations weekly across Meta and TikTok feeds.',
-      deliverables: ['AI Avatar & Creator UGC Studio', 'TikTok & Meta Ad Scale', 'Headless Storefront Design']
+      summary: 'Custom storefront rebuild paired with weekly reel production, product photography edits, and catalogue management to support seasonal drops.',
+      deliverables: ['Custom Shopify Storefront', 'Payment Gateway Integration', 'Short-Form Video Production', 'Weekly Post & Reel Calendars']
     }
   ]);
 
@@ -73,14 +73,14 @@ export default function HorizontalWorkShowcase({ onHoverCursor }) {
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: '4rem', flexWrap: 'wrap', gap: '1.5rem' }}>
           <div>
             <span className="dc-badge dc-badge-purple" style={{ marginBottom: '1rem' }}>
-              SELECTED PORTFOLIO
+              SELECTED WORK
             </span>
             <h2 style={{ fontSize: 'clamp(2.2rem, 4.5vw, 3.8rem)' }}>
-              Featured Agency <span className="dc-text-purple">Projects.</span>
+              Recent Agency <span className="dc-text-purple">Projects.</span>
             </h2>
           </div>
           <p style={{ maxWidth: '450px', color: 'var(--dc-text-secondary)', fontSize: '1.05rem' }}>
-            Art-directed visual work across brand strategy, sub-second web engineering, and acquisition marketing.
+            Websites, internal tools, storefronts, and content systems built around how our clients run their businesses.
           </p>
         </div>
       </div>

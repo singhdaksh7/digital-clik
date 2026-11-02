@@ -5,7 +5,7 @@ import { getSiteSettings } from '../api/public';
 export default function TopBar({ onOpenAuditModal }) {
   const [currency, setCurrency] = useState('USD ($)');
   const [isCurrencyOpen, setIsCurrencyOpen] = useState(false);
-  const [announcementText, setAnnouncementText] = useState('Building high-performing digital experiences & growth strategy for ambitious brands.');
+  const [announcementText, setAnnouncementText] = useState('Websites, custom software, automations and digital content built for real business needs.');
   const [phoneText, setPhoneText] = useState('+1 (800) 555-CLIK');
 
   useEffect(() => {
@@ -143,7 +143,7 @@ export default function TopBar({ onOpenAuditModal }) {
               gap: '0.2rem'
             }}
           >
-            <span>Let's Talk</span>
+            <span>Talk to us</span>
             <ArrowRight size={13} />
           </button>
         </div>

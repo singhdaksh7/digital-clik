@@ -13,7 +13,7 @@ export default function BlackManifesto() {
         <div style={{ maxWidth: '1100px', margin: '0 auto', textAlign: 'left' }}>
           
           <div className="dc-badge dc-badge-dark" style={{ marginBottom: '2rem' }}>
-            DIGITALCLIK MANIFESTO
+            OUR APPROACH
           </div>
 
           <h2 style={{
@@ -24,8 +24,8 @@ export default function BlackManifesto() {
             color: '#FFFFFF',
             marginBottom: '2.5rem'
           }}>
-            WE DON'T JUST MAKE THINGS LOOK GOOD. <br />
-            WE MAKE THEM <span className="dc-text-purple">WORK HARDER.</span>
+            THE WEBSITE IS ONLY ONE PART. <br />
+            THE SYSTEM BEHIND IT <span className="dc-text-purple">MATTERS MORE.</span>
           </h2>
 
           <div style={{
@@ -38,19 +38,19 @@ export default function BlackManifesto() {
             
             <div>
               <h4 style={{ color: '#FFFFFF', fontSize: '1.2rem', marginBottom: '0.75rem', fontWeight: 700 }}>
-                Strategy Before Execution
+                Design, Development & Real Operations
               </h4>
               <p style={{ color: '#A3A3A3', fontSize: '1.05rem', lineHeight: 1.6 }}>
-                Design without positioning is just decoration. We align visual identity, high-speed engineering, and acquisition strategy to achieve measurable category market dominance.
+                A pretty website does not solve anything if your checkout feels clunky or your team is still manually copying inquiries into spreadsheets. We design clean interfaces, write dependable code, and build the admin tools your team uses every single day.
               </p>
             </div>
 
             <div>
               <h4 style={{ color: '#FFFFFF', fontSize: '1.2rem', marginBottom: '0.75rem', fontWeight: 700 }}>
-                Technology Built to Scale
+                Automation, Content & Day-to-Day Delivery
               </h4>
               <p style={{ color: '#A3A3A3', fontSize: '1.05rem', lineHeight: 1.6 }}>
-                From Next.js web applications to AI-first search entity optimization (AEO/GEO), our technical platforms are built for sub-second performance and long-term durability.
+                From WhatsApp lead alerts and CRM sync to weekly video edits and monthly post calendars, we handle the ongoing digital execution. One practical, technically capable team instead of five separate freelancers.
               </p>
             </div>
 

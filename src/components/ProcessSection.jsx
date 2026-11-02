@@ -7,39 +7,39 @@ export default function ProcessSection() {
   const steps = [
     {
       num: '01',
-      title: 'DISCOVER',
-      subtitle: 'Market Intelligence & Positioning Audit',
-      description: 'We audit your category competitors, target user search behavior, brand positioning, and technical bottlenecks to identify high-leverage growth opportunities.'
+      title: 'UNDERSTAND',
+      subtitle: 'Scope & Workflow Mapping',
+      description: 'We start with how your business works, what is broken, and what the final system actually needs to do.'
     },
     {
       num: '02',
-      title: 'DEFINE',
-      subtitle: 'Strategy & System Architecture',
-      description: 'We map out clear project deliverables, content strategy, AI search entity structuring, and web engineering blueprints before touching design tools.'
+      title: 'PLAN',
+      subtitle: 'Architecture & Priorities',
+      description: 'We map pages, features, workflows and priorities before development starts.'
     },
     {
       num: '03',
       title: 'DESIGN',
-      subtitle: 'High-Impact Art-Directed Interfaces',
-      description: 'We craft distinctive visual design systems, custom component libraries, and interactive prototypes engineered to captivate and convert visitors.'
+      subtitle: 'UI/UX & Prototypes',
+      description: 'We design clean, modern interfaces that are easy to use and look sharp on every screen.'
     },
     {
       num: '04',
       title: 'BUILD',
-      subtitle: 'Sub-Second Full-Stack Development',
-      description: 'Our engineering team develops high-performance Next.js, React, and Node.js applications with 99+ Core Web Vitals and bulletproof security.'
+      subtitle: 'Clean Full-Stack Development',
+      description: 'We develop in stages, test properly and keep you involved throughout.'
     },
     {
       num: '05',
       title: 'LAUNCH',
-      subtitle: 'Seamless Deployment & QA Hardening',
-      description: 'Rigorous cross-browser testing, accessibility compliance, serverless infrastructure deployment, and live AI search index verification.'
+      subtitle: 'Testing & Go-Live',
+      description: 'We handle deployment, domains, integrations and final checks.'
     },
     {
       num: '06',
-      title: 'GROW',
-      subtitle: 'Continuous Optimization & Ad Scale',
-      description: 'Ongoing A/B multivariate CRO testing, performance media scaling across search & paid social, and continuous search authority expansion.'
+      title: 'IMPROVE',
+      subtitle: 'Ongoing Support',
+      description: 'We stay available for updates, fixes and the next version.'
     }
   ];
 
@@ -52,14 +52,14 @@ export default function ProcessSection() {
           {/* Sticky Left Column Heading */}
           <div style={{ position: 'sticky', top: 'calc(var(--dc-header-height) + 30px)' }}>
             <span className="dc-badge dc-badge-purple" style={{ marginBottom: '1rem' }}>
-              PROVEN AGENCY METHODOLOGY
+              OUR PROCESS
             </span>
             <h2 style={{ fontSize: 'clamp(2.2rem, 4vw, 3.5rem)', color: '#0A0A0A', marginBottom: '1.25rem' }}>
-              How We Build <br />
-              <span className="dc-text-purple">Market Leaders.</span>
+              How We <br />
+              <span className="dc-text-purple">Work.</span>
             </h2>
             <p style={{ color: 'var(--dc-text-secondary)', fontSize: '1.05rem', lineHeight: 1.6, maxWidth: '480px' }}>
-              A disciplined 6-stage process combining strategic clarity, art-directed design, sub-second engineering, and performance growth.
+              A straightforward, stage-by-stage process so you always know what is being built, why, and what comes next.
             </p>
           </div>
 
