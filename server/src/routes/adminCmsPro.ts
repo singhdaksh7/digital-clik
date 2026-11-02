@@ -4,6 +4,12 @@ import { requireRole, AuthenticatedRequest } from '../middleware/auth.js';
 import { slugify } from '../utils/sanitizer.js';
 import { sendNotificationEmail } from '../utils/mailer.js';
 import crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
+import { exec } from 'child_process';
+import util from 'util';
+
+const execPromise = util.promisify(exec);
 
 const router = Router();
 
@@ -567,66 +573,243 @@ router.post('/email-templates/test-send', requireRole(['SUPER_ADMIN', 'ADMIN']),
 });
 
 // -----------------------------------------------------------------------------
-// 5. SEO OVERVIEW & AUDIT ENGINE
+// 5. SEO AUDIT ENGINE (FACTUAL METRICS ONLY - NO FAKE PERCENTAGES)
 // -----------------------------------------------------------------------------
 
-// GET /api/admin/seo/overview
+// Helper to extract internal links from HTML/Markdown text
+function extractInternalLinks(content: string): string[] {
+  if (!content) return [];
+  const links: string[] = [];
+  // Match href="/..."
+  const hrefRegex = /href=["'](\/[^"'#?]+)["']/g;
+  let match;
+  while ((match = hrefRegex.exec(content)) !== null) {
+    if (!match[1].startsWith('/api') && !match[1].startsWith('/uploads') && !match[1].startsWith('/assets')) {
+      links.push(match[1]);
+    }
+  }
+  // Match markdown links [text](/path)
+  const mdRegex = /\[[^\]]*\]\((\/[^)\s#?]+)\)/g;
+  while ((match = mdRegex.exec(content)) !== null) {
+    if (!match[1].startsWith('/api') && !match[1].startsWith('/uploads') && !match[1].startsWith('/assets')) {
+      links.push(match[1]);
+    }
+  }
+  return links;
+}
+
+// GET /api/admin/seo/overview - 100% Factual SEO metrics, issues and counters
 router.get('/seo/overview', requireRole(['SUPER_ADMIN', 'ADMIN', 'EDITOR']), async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const [pages, posts, redirectsCount, open404s, servicesCount, projectsCount] = await Promise.all([
+    const [pages, posts, redirects, open404s, services, projects, mediaAltIssues] = await Promise.all([
       prisma.page.findMany({
         where: { deletedAt: null },
-        select: { id: true, title: true, slug: true, status: true, metaTitle: true, metaDescription: true, ogImage: true, publishedAt: true }
+        include: { blocks: { select: { type: true, content: true } } }
       }),
       prisma.blogPost.findMany({
-        select: { id: true, title: true, slug: true, status: true, metaTitle: true, metaDescription: true, ogImage: true, publishedAt: true }
+        where: { deletedAt: null },
+        select: { id: true, title: true, slug: true, status: true, metaTitle: true, metaDescription: true, ogImage: true, canonicalUrl: true, publishedAt: true }
       }),
-      prisma.redirect.count({ where: { isActive: true } }),
-      prisma.notFoundLog.count(),
-      prisma.service.count(),
-      prisma.project.count()
+      prisma.redirect.findMany({ where: { isActive: true } }),
+      prisma.notFoundLog.findMany({ where: { isResolved: false, isIgnored: false } }),
+      prisma.service.findMany({ select: { id: true, title: true, slug: true } }),
+      prisma.project.findMany({ where: { deletedAt: null }, select: { id: true, title: true, slug: true } }),
+      prisma.mediaItem.count({
+        where: {
+          isTrashed: false,
+          OR: [
+            { altText: null },
+            { altText: '' },
+            { altText: 'DigitalClik Media Asset' }
+          ]
+        }
+      })
     ]);
 
     const issues: any[] = [];
 
-    // Analyze dynamic pages
+    // Valid path registry for broken link detection
+    const validPaths = new Set<string>([
+      '/', '/services', '/work', '/about', '/process', '/blog', '/contact', '/privacy', '/terms', '/cookies'
+    ]);
+    services.forEach(s => validPaths.add(`/services/${s.slug}`));
+    projects.forEach(p => validPaths.add(`/work/${p.slug}`));
+    posts.filter(b => b.status === 'PUBLISHED').forEach(b => validPaths.add(`/blog/${b.slug}`));
+    pages.filter(p => p.status === 'PUBLISHED').forEach(p => validPaths.add(`/${p.slug}`));
+    redirects.forEach(r => validPaths.add(r.sourcePath));
+
+    // Duplicate tracker maps
+    const titleCounts = new Map<string, Array<{ type: string; title: string; url: string }>>();
+    const descCounts = new Map<string, Array<{ type: string; title: string; url: string }>>();
+
+    let missingMetaTitleCount = 0;
+    let missingMetaDescCount = 0;
+    let missingH1Count = 0;
+    let multipleH1Count = 0;
+    let brokenInternalLinksCount = 0;
+    let noindexPagesCount = 0;
+    let canonicalProblemsCount = 0;
+
+    // 1. Analyze published pages
     for (const p of pages) {
       if (p.status !== 'PUBLISHED') continue;
-      const title = p.metaTitle || p.title;
-      if (!p.metaTitle) {
-        issues.push({ type: 'MISSING_META_TITLE', entity: 'Page', title: p.title, url: `/${p.slug}`, severity: 'HIGH' });
-      } else if (title.length < 20) {
-        issues.push({ type: 'SHORT_TITLE', entity: 'Page', title: p.title, url: `/${p.slug}`, severity: 'LOW', details: `${title.length} chars (recommended: 30-60)` });
+      const url = `/${p.slug}`;
+
+      if (p.noIndex) {
+        noindexPagesCount++;
+        issues.push({ type: 'NOINDEX_PAGE', entity: 'Page', title: p.title, url, severity: 'NOTICE', details: 'Search engine indexation blocked by noindex flag' });
       }
 
-      if (!p.metaDescription) {
-        issues.push({ type: 'MISSING_META_DESC', entity: 'Page', title: p.title, url: `/${p.slug}`, severity: 'HIGH' });
-      } else if (p.metaDescription.length < 50) {
-        issues.push({ type: 'SHORT_DESC', entity: 'Page', title: p.title, url: `/${p.slug}`, severity: 'MEDIUM', details: `${p.metaDescription.length} chars (recommended: 120-160)` });
+      const title = p.metaTitle?.trim() || p.title?.trim();
+      if (!title) {
+        missingMetaTitleCount++;
+        issues.push({ type: 'MISSING_META_TITLE', entity: 'Page', title: p.title, url, severity: 'CRITICAL', details: 'Page is missing a title tag' });
+      } else {
+        const arr = titleCounts.get(title) || [];
+        arr.push({ type: 'Page', title: p.title, url });
+        titleCounts.set(title, arr);
       }
 
-      if (!p.ogImage) {
-        issues.push({ type: 'MISSING_OG_IMAGE', entity: 'Page', title: p.title, url: `/${p.slug}`, severity: 'MEDIUM' });
+      if (!p.metaDescription?.trim()) {
+        missingMetaDescCount++;
+        issues.push({ type: 'MISSING_META_DESC', entity: 'Page', title: p.title, url, severity: 'CRITICAL', details: 'Missing meta description' });
+      } else {
+        const desc = p.metaDescription.trim();
+        const arr = descCounts.get(desc) || [];
+        arr.push({ type: 'Page', title: p.title, url });
+        descCounts.set(desc, arr);
+      }
+
+      // H1 / Hero section analysis
+      const heroBlocks = p.blocks.filter(b => b.type === 'HERO');
+      if (heroBlocks.length === 0) {
+        missingH1Count++;
+        issues.push({ type: 'MISSING_H1', entity: 'Page', title: p.title, url, severity: 'CRITICAL', details: 'No primary HERO/H1 section found' });
+      } else if (heroBlocks.length > 1) {
+        multipleH1Count++;
+        issues.push({ type: 'MULTIPLE_H1', entity: 'Page', title: p.title, url, severity: 'WARNING', details: `${heroBlocks.length} HERO sections detected. Best practice is 1 primary H1.` });
+      }
+
+      // Scan page blocks for broken internal links
+      for (const block of p.blocks) {
+        const foundLinks = extractInternalLinks(block.content);
+        for (const link of foundLinks) {
+          if (!validPaths.has(link) && !validPaths.has(link.toLowerCase())) {
+            brokenInternalLinksCount++;
+            issues.push({ type: 'BROKEN_INTERNAL_LINK', entity: 'Page', title: p.title, url, severity: 'CRITICAL', details: `Points to missing internal path "${link}"` });
+          }
+        }
+      }
+
+      // Canonical URL check
+      if (p.canonicalUrl && !p.canonicalUrl.startsWith('http')) {
+        canonicalProblemsCount++;
+        issues.push({ type: 'CANONICAL_PROBLEM', entity: 'Page', title: p.title, url, severity: 'WARNING', details: `Relative canonical "${p.canonicalUrl}" should be absolute URL` });
       }
     }
 
-    // Analyze blog posts
+    // 2. Analyze published blog posts
     for (const b of posts) {
       if (b.status !== 'PUBLISHED') continue;
-      if (!b.metaTitle) {
-        issues.push({ type: 'MISSING_META_TITLE', entity: 'BlogPost', title: b.title, url: `/blog/${b.slug}`, severity: 'HIGH' });
+      const url = `/blog/${b.slug}`;
+
+      const title = b.metaTitle?.trim() || b.title?.trim();
+      if (!title) {
+        missingMetaTitleCount++;
+        issues.push({ type: 'MISSING_META_TITLE', entity: 'BlogPost', title: b.title, url, severity: 'CRITICAL', details: 'Blog post is missing title tag' });
+      } else {
+        const arr = titleCounts.get(title) || [];
+        arr.push({ type: 'BlogPost', title: b.title, url });
+        titleCounts.set(title, arr);
       }
-      if (!b.metaDescription) {
-        issues.push({ type: 'MISSING_META_DESC', entity: 'BlogPost', title: b.title, url: `/blog/${b.slug}`, severity: 'HIGH' });
+
+      if (!b.metaDescription?.trim()) {
+        missingMetaDescCount++;
+        issues.push({ type: 'MISSING_META_DESC', entity: 'BlogPost', title: b.title, url, severity: 'CRITICAL', details: 'Blog post is missing meta description' });
+      } else {
+        const desc = b.metaDescription.trim();
+        const arr = descCounts.get(desc) || [];
+        arr.push({ type: 'BlogPost', title: b.title, url });
+        descCounts.set(desc, arr);
       }
-      if (!b.ogImage) {
-        issues.push({ type: 'MISSING_OG_IMAGE', entity: 'BlogPost', title: b.title, url: `/blog/${b.slug}`, severity: 'MEDIUM' });
+
+      if (b.canonicalUrl && !b.canonicalUrl.startsWith('http')) {
+        canonicalProblemsCount++;
+        issues.push({ type: 'CANONICAL_PROBLEM', entity: 'BlogPost', title: b.title, url, severity: 'WARNING', details: `Relative canonical "${b.canonicalUrl}" should be absolute URL` });
       }
     }
 
-    const publishedPagesCount = pages.filter((p: any) => p.status === 'PUBLISHED').length;
-    const publishedPostsCount = posts.filter((b: any) => b.status === 'PUBLISHED').length;
-    const totalIndexable = publishedPagesCount + publishedPostsCount + servicesCount + projectsCount;
+    // 3. Duplicate titles and descriptions
+    let duplicateTitleCount = 0;
+    titleCounts.forEach((items, t) => {
+      if (items.length > 1) {
+        duplicateTitleCount += items.length;
+        items.forEach(item => {
+          issues.push({ type: 'DUPLICATE_META_TITLE', entity: item.type, title: item.title, url: item.url, severity: 'WARNING', details: `Duplicate title shared across ${items.length} URLs: "${t.slice(0, 40)}..."` });
+        });
+      }
+    });
+
+    let duplicateDescCount = 0;
+    descCounts.forEach((items, d) => {
+      if (items.length > 1) {
+        duplicateDescCount += items.length;
+        items.forEach(item => {
+          issues.push({ type: 'DUPLICATE_META_DESC', entity: item.type, title: item.title, url: item.url, severity: 'WARNING', details: `Identical meta description shared across ${items.length} URLs` });
+        });
+      }
+    });
+
+    // 4. Detect redirect chains (A -> B and B -> C)
+    const redirectMap = new Map<string, string>();
+    redirects.forEach(r => redirectMap.set(r.sourcePath, r.targetPath));
+
+    let redirectChainsCount = 0;
+    const redirectChains: Array<{ source: string; intermediate: string; target: string }> = [];
+    redirectMap.forEach((target, source) => {
+      if (redirectMap.has(target)) {
+        redirectChainsCount++;
+        const finalTarget = redirectMap.get(target)!;
+        redirectChains.push({ source, intermediate: target, target: finalTarget });
+        issues.push({
+          type: 'REDIRECT_CHAIN',
+          entity: 'Redirect',
+          title: `Chain: ${source} → ${target} → ${finalTarget}`,
+          url: source,
+          severity: 'WARNING',
+          details: `Avoid chain latency. Point ${source} directly to ${finalTarget}`
+        });
+      }
+    });
+
+    // Summary Factual Counters
+    const criticalIssues = issues.filter(i => i.severity === 'CRITICAL').length;
+    const warningIssues = issues.filter(i => i.severity === 'WARNING').length;
+
+    const publishedPagesCount = pages.filter(p => p.status === 'PUBLISHED').length;
+    const publishedPostsCount = posts.filter(b => b.status === 'PUBLISHED').length;
+    const totalIndexable = publishedPagesCount + publishedPostsCount + services.length + projects.length;
+
+    const statusCounts = {
+      healthy: Math.max(0, totalIndexable - criticalIssues),
+      warnings: warningIssues,
+      needsAttention: criticalIssues
+    };
+
+    const counters = {
+      missingMetaTitle: missingMetaTitleCount,
+      missingMetaDescription: missingMetaDescCount,
+      duplicateMetaTitle: duplicateTitleCount,
+      duplicateMetaDescription: duplicateDescCount,
+      missingH1: missingH1Count,
+      multipleH1: multipleH1Count,
+      missingAltText: mediaAltIssues,
+      brokenInternalLinks: brokenInternalLinksCount,
+      noindexPages: noindexPagesCount,
+      canonicalProblems: canonicalProblemsCount,
+      open404s: open404s.length,
+      redirectChains: redirectChainsCount
+    };
 
     return res.json({
       success: true,
@@ -634,13 +817,12 @@ router.get('/seo/overview', requireRole(['SUPER_ADMIN', 'ADMIN', 'EDITOR']), asy
         totalIndexable,
         publishedPagesCount,
         publishedPostsCount,
-        servicesCount,
-        projectsCount,
-        redirectsCount,
-        open404s,
+        servicesCount: services.length,
+        projectsCount: projects.length,
+        redirectsCount: redirects.length,
+        statusCounts,
+        counters,
         totalIssues: issues.length,
-        highSeverityIssues: issues.filter(i => i.severity === 'HIGH').length,
-        mediumSeverityIssues: issues.filter(i => i.severity === 'MEDIUM').length,
         issues
       }
     });
@@ -649,8 +831,682 @@ router.get('/seo/overview', requireRole(['SUPER_ADMIN', 'ADMIN', 'EDITOR']), asy
   }
 });
 
+// GET /api/admin/seo/internal-links - Internal Link Graph
+router.get('/seo/internal-links', requireRole(['SUPER_ADMIN', 'ADMIN', 'EDITOR']), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const pages = await prisma.page.findMany({
+      where: { status: 'PUBLISHED', deletedAt: null },
+      include: { blocks: { select: { id: true, type: true, content: true } } }
+    });
+
+    const publishedUrls = new Set(pages.map(p => `/${p.slug}`));
+
+    const graph: Array<{
+      pageId: string;
+      title: string;
+      slug: string;
+      url: string;
+      incomingLinksCount: number;
+      outgoingLinksCount: number;
+      incoming: Array<{ sourceTitle: string; sourceUrl: string }>;
+      outgoing: string[];
+      brokenLinks: string[];
+    }> = [];
+
+    // Map outgoing links
+    const outgoingMap = new Map<string, string[]>();
+    const brokenMap = new Map<string, string[]>();
+
+    for (const page of pages) {
+      const url = `/${page.slug}`;
+      const allOut: string[] = [];
+      const broken: string[] = [];
+
+      for (const b of page.blocks) {
+        const links = extractInternalLinks(b.content);
+        for (const l of links) {
+          allOut.push(l);
+          if (!publishedUrls.has(l) && !publishedUrls.has(l.toLowerCase())) {
+            broken.push(l);
+          }
+        }
+      }
+      outgoingMap.set(url, allOut);
+      brokenMap.set(url, broken);
+    }
+
+    // Map incoming links
+    for (const page of pages) {
+      const url = `/${page.slug}`;
+      const incoming: Array<{ sourceTitle: string; sourceUrl: string }> = [];
+
+      pages.forEach(otherPage => {
+        if (otherPage.id === page.id) return;
+        const otherUrl = `/${otherPage.slug}`;
+        const otherOut = outgoingMap.get(otherUrl) || [];
+        if (otherOut.includes(url)) {
+          incoming.push({ sourceTitle: otherPage.title, sourceUrl: otherUrl });
+        }
+      });
+
+      const outgoing = outgoingMap.get(url) || [];
+      const broken = brokenMap.get(url) || [];
+
+      graph.push({
+        pageId: page.id,
+        title: page.title,
+        slug: page.slug,
+        url,
+        incomingLinksCount: incoming.length,
+        outgoingLinksCount: outgoing.length,
+        incoming,
+        outgoing,
+        brokenLinks: broken
+      });
+    }
+
+    return res.json({ success: true, count: graph.length, data: graph });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// GET /api/admin/seo/redirect-chains - Detect redirect chains
+router.get('/seo/redirect-chains', requireRole(['SUPER_ADMIN', 'ADMIN']), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const redirects = await prisma.redirect.findMany({ where: { isActive: true } });
+    const map = new Map<string, string>();
+    redirects.forEach(r => map.set(r.sourcePath, r.targetPath));
+
+    const chains: Array<{ source: string; intermediate: string; target: string; suggestion: string }> = [];
+
+    map.forEach((target, source) => {
+      if (map.has(target)) {
+        const finalTarget = map.get(target)!;
+        chains.push({
+          source,
+          intermediate: target,
+          target: finalTarget,
+          suggestion: `Update ${source} directly to ${finalTarget}`
+        });
+      }
+    });
+
+    return res.json({ success: true, count: chains.length, data: chains });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// POST /api/admin/404-logs/:id/resolve - Resolve 404 & optionally create redirect
+router.post('/404-logs/:id/resolve', requireRole(['SUPER_ADMIN', 'ADMIN']), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const id = req.params.id as string;
+    const { targetPath, statusCode = 301 } = req.body;
+
+    const log = await prisma.notFoundLog.findUnique({ where: { id } });
+    if (!log) return res.status(404).json({ success: false, error: { message: '404 record not found' } });
+
+    let redirectId: string | null = null;
+    if (targetPath && typeof targetPath === 'string' && targetPath.trim()) {
+      const existing = await prisma.redirect.findUnique({ where: { sourcePath: log.path } });
+      if (!existing) {
+        const created = await prisma.redirect.create({
+          data: {
+            sourcePath: log.path,
+            targetPath: targetPath.trim(),
+            statusCode: parseInt(String(statusCode), 10) || 301,
+            isActive: true,
+            createdBy: req.user?.email || null
+          }
+        });
+        redirectId = created.id;
+      }
+    }
+
+    const updated = await prisma.notFoundLog.update({
+      where: { id },
+      data: {
+        isResolved: true,
+        resolvedToRedirectId: redirectId
+      }
+    });
+
+    await logAudit(req.user?.userId, 'RESOLVE_404', 'NotFoundLog', id, { targetPath, redirectId });
+    return res.json({ success: true, data: updated });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// POST /api/admin/404-logs/:id/ignore - Mark 404 ignored
+router.post('/404-logs/:id/ignore', requireRole(['SUPER_ADMIN', 'ADMIN']), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const id = req.params.id as string;
+    const updated = await prisma.notFoundLog.update({
+      where: { id },
+      data: { isIgnored: true }
+    });
+    return res.json({ success: true, data: updated });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
 // -----------------------------------------------------------------------------
-// 6. SYSTEM HEALTH & DIAGNOSTICS
+// 6. REVISIONS VISUAL DIFF ENGINE
+// -----------------------------------------------------------------------------
+
+// GET /api/admin/pages/:pageId/revisions/:revisionId/diff - Human-readable comparison
+router.get('/pages/:pageId/revisions/:revisionId/diff', requireRole(['SUPER_ADMIN', 'ADMIN', 'EDITOR']), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const pageId = req.params.pageId as string;
+    const revisionId = req.params.revisionId as string;
+
+    const [currentPage, revision] = await Promise.all([
+      prisma.page.findUnique({
+        where: { id: pageId },
+        include: { blocks: { orderBy: { sortOrder: 'asc' } } }
+      }),
+      prisma.pageRevision.findUnique({ where: { id: revisionId } })
+    ]);
+
+    if (!currentPage || !revision) {
+      return res.status(404).json({ success: false, error: { message: 'Page or revision snapshot not found' } });
+    }
+
+    const snapshot = JSON.parse(revision.snapshot);
+    const snapshotBlocks: any[] = snapshot.blocks || [];
+    const currentBlocks: any[] = (currentPage as any).blocks || [];
+
+    // Compare metadata
+    const metaDiff: Array<{ field: string; oldVal: any; newVal: any }> = [];
+    ['title', 'slug', 'metaTitle', 'metaDescription', 'status', 'template'].forEach((field) => {
+      const oldVal = snapshot[field];
+      const newVal = (currentPage as any)[field];
+      if (oldVal !== newVal) {
+        metaDiff.push({ field, oldVal, newVal });
+      }
+    });
+
+    // Compare blocks
+    const oldBlockMap = new Map<string, any>();
+    snapshotBlocks.forEach((b: any) => oldBlockMap.set(b.id, b));
+
+    const newBlockMap = new Map<string, any>();
+    currentBlocks.forEach((b: any) => newBlockMap.set(b.id, b));
+
+    const addedBlocks: any[] = [];
+    const removedBlocks: any[] = [];
+    const modifiedBlocks: Array<{ id: string; type: string; changes: string[] }> = [];
+
+    // Detect added & modified
+    currentBlocks.forEach((b) => {
+      if (!oldBlockMap.has(b.id)) {
+        addedBlocks.push({ id: b.id, type: b.type, sortOrder: b.sortOrder });
+      } else {
+        const oldB = oldBlockMap.get(b.id);
+        const changes: string[] = [];
+        if (oldB.type !== b.type) changes.push(`Type changed from ${oldB.type} to ${b.type}`);
+        if (oldB.sortOrder !== b.sortOrder) changes.push(`Order changed from ${oldB.sortOrder} to ${b.sortOrder}`);
+        if (oldB.isVisible !== b.isVisible) changes.push(`Visibility changed from ${oldB.isVisible} to ${b.isVisible}`);
+        if (oldB.content !== b.content) changes.push('Block content/text modified');
+        if (changes.length > 0) {
+          modifiedBlocks.push({ id: b.id, type: b.type, changes });
+        }
+      }
+    });
+
+    // Detect removed
+    snapshotBlocks.forEach((b) => {
+      if (!newBlockMap.has(b.id)) {
+        removedBlocks.push({ id: b.id, type: b.type, sortOrder: b.sortOrder });
+      }
+    });
+
+    return res.json({
+      success: true,
+      revision: {
+        id: revision.id,
+        createdAt: revision.createdAt,
+        author: revision.author,
+        note: revision.note
+      },
+      metaDiff,
+      blocksDiff: {
+        totalOld: snapshotBlocks.length,
+        totalNew: currentBlocks.length,
+        addedBlocks,
+        removedBlocks,
+        modifiedBlocks
+      }
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// -----------------------------------------------------------------------------
+// 7. APPROVAL WORKFLOW & REVIEW QUEUE
+// -----------------------------------------------------------------------------
+
+// POST /api/admin/pages/:id/submit-review - Editor submits page for review
+router.post('/pages/:id/submit-review', requireRole(['SUPER_ADMIN', 'ADMIN', 'EDITOR']), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const id = req.params.id as string;
+    const { note } = req.body;
+
+    const page = await prisma.page.update({
+      where: { id },
+      data: {
+        reviewStatus: 'SUBMITTED',
+        submittedBy: req.user?.email || 'Editor',
+        submittedAt: new Date(),
+        reviewNote: note || 'Ready for editorial review'
+      }
+    });
+
+    await prisma.adminNotification.create({
+      data: {
+        type: 'PAGE_SUBMITTED',
+        title: 'Content Submitted for Review',
+        message: `"${page.title}" was submitted by ${req.user?.email || 'Editor'} for review.`,
+        link: `/admin?pageId=${page.id}`
+      }
+    });
+
+    await logAudit(req.user?.userId, 'SUBMIT_FOR_REVIEW', 'Page', id, { note });
+    return res.json({ success: true, data: page });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// POST /api/admin/pages/:id/approve - Admin approves page
+router.post('/pages/:id/approve', requireRole(['SUPER_ADMIN', 'ADMIN']), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const id = req.params.id as string;
+    const page = await prisma.page.update({
+      where: { id },
+      data: {
+        reviewStatus: 'APPROVED',
+        approvedBy: req.user?.email || 'Admin',
+        approvedAt: new Date()
+      }
+    });
+
+    await prisma.adminNotification.create({
+      data: {
+        type: 'PAGE_APPROVED',
+        title: 'Content Approved',
+        message: `"${page.title}" was approved by ${req.user?.email || 'Admin'}.`,
+        link: `/admin?pageId=${page.id}`
+      }
+    });
+
+    await logAudit(req.user?.userId, 'APPROVE_PAGE', 'Page', id);
+    return res.json({ success: true, data: page });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// POST /api/admin/pages/:id/reject - Admin rejects page with reason
+router.post('/pages/:id/reject', requireRole(['SUPER_ADMIN', 'ADMIN']), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const id = req.params.id as string;
+    const { reason } = req.body;
+
+    if (!reason || !reason.trim()) {
+      return res.status(400).json({ success: false, error: { message: 'Rejection reason is required' } });
+    }
+
+    const page = await prisma.page.update({
+      where: { id },
+      data: {
+        reviewStatus: 'REJECTED',
+        rejectedBy: req.user?.email || 'Admin',
+        rejectedAt: new Date(),
+        reviewNote: reason.trim()
+      }
+    });
+
+    await prisma.adminNotification.create({
+      data: {
+        type: 'PAGE_REJECTED',
+        title: 'Content Revision Requested',
+        message: `"${page.title}" was rejected: ${reason}`,
+        link: `/admin?pageId=${page.id}`
+      }
+    });
+
+    await logAudit(req.user?.userId, 'REJECT_PAGE', 'Page', id, { reason });
+    return res.json({ success: true, data: page });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// GET /api/admin/review-queue - Content awaiting approval
+router.get('/review-queue', requireRole(['SUPER_ADMIN', 'ADMIN', 'EDITOR']), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const items = await prisma.page.findMany({
+      where: { reviewStatus: 'SUBMITTED', deletedAt: null },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        pageType: true,
+        submittedBy: true,
+        submittedAt: true,
+        reviewNote: true,
+        updatedAt: true
+      },
+      orderBy: { submittedAt: 'desc' }
+    });
+    return res.json({ success: true, count: items.length, data: items });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// -----------------------------------------------------------------------------
+// 8. SCHEDULED JOBS DASHBOARD API
+// -----------------------------------------------------------------------------
+
+// GET /api/admin/scheduled-jobs
+router.get('/scheduled-jobs', requireRole(['SUPER_ADMIN', 'ADMIN']), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const now = new Date();
+    const [upcomingPublish, upcomingUnpublish, pastJobs] = await Promise.all([
+      prisma.page.findMany({
+        where: { publishAt: { gt: now }, deletedAt: null },
+        select: { id: true, title: true, slug: true, status: true, publishAt: true },
+        orderBy: { publishAt: 'asc' }
+      }),
+      prisma.page.findMany({
+        where: { unpublishAt: { gt: now }, deletedAt: null },
+        select: { id: true, title: true, slug: true, status: true, unpublishAt: true },
+        orderBy: { unpublishAt: 'asc' }
+      }),
+      prisma.page.findMany({
+        where: {
+          OR: [
+            { publishAt: { lte: now } },
+            { unpublishAt: { lte: now } }
+          ],
+          deletedAt: null
+        },
+        select: { id: true, title: true, slug: true, status: true, publishAt: true, unpublishAt: true },
+        take: 20,
+        orderBy: { updatedAt: 'desc' }
+      })
+    ]);
+
+    return res.json({
+      success: true,
+      data: {
+        upcomingPublish,
+        upcomingUnpublish,
+        pastJobs
+      }
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// POST /api/admin/scheduled-jobs/:id/cancel
+router.post('/scheduled-jobs/:id/cancel', requireRole(['SUPER_ADMIN', 'ADMIN']), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const id = req.params.id as string;
+    const { action } = req.body; // 'publish' | 'unpublish' | 'both'
+
+    const data: any = {};
+    if (action === 'publish' || action === 'both' || !action) data.publishAt = null;
+    if (action === 'unpublish' || action === 'both' || !action) data.unpublishAt = null;
+
+    const updated = await prisma.page.update({ where: { id }, data });
+    await logAudit(req.user?.userId, 'CANCEL_SCHEDULED_JOB', 'Page', id, { action });
+    return res.json({ success: true, data: updated });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// -----------------------------------------------------------------------------
+// 9. NAVIGATION DRAFT & PUBLISH
+// -----------------------------------------------------------------------------
+
+// GET /api/admin/navigation/:key/detailed
+router.get('/navigation/:key/detailed', requireRole(['SUPER_ADMIN', 'ADMIN', 'EDITOR']), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const key = (req.params.key as string).toUpperCase();
+    const menu = await prisma.navigationMenu.findUnique({
+      where: { key },
+      include: { items: { orderBy: { sortOrder: 'asc' } } }
+    });
+    if (!menu) return res.status(404).json({ success: false, error: { message: 'Menu not found' } });
+    return res.json({ success: true, data: menu });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// PUT /api/admin/navigation/:key/draft - Save draft menu structure without breaking live site
+router.put('/navigation/:key/draft', requireRole(['SUPER_ADMIN', 'ADMIN']), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const key = (req.params.key as string).toUpperCase();
+    const { items } = req.body;
+
+    const updated = await prisma.navigationMenu.update({
+      where: { key },
+      data: {
+        status: 'DRAFT',
+        draftData: JSON.stringify(items)
+      }
+    });
+
+    await logAudit(req.user?.userId, 'SAVE_DRAFT_NAVIGATION', 'NavigationMenu', updated.id);
+    return res.json({ success: true, data: updated });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// POST /api/admin/navigation/:key/publish - Publish draft menu to live production
+router.post('/navigation/:key/publish', requireRole(['SUPER_ADMIN', 'ADMIN']), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const key = (req.params.key as string).toUpperCase();
+    const menu = await prisma.navigationMenu.findUnique({ where: { key } });
+    if (!menu) return res.status(404).json({ success: false, error: { message: 'Menu not found' } });
+
+    if (menu.draftData) {
+      const draftItems: any[] = JSON.parse(menu.draftData);
+      // Replace live items atomically
+      await prisma.navigationItem.deleteMany({ where: { menuId: menu.id } });
+      if (draftItems.length > 0) {
+        await prisma.navigationItem.createMany({
+          data: draftItems.map((item, idx) => ({
+            menuId: menu.id,
+            label: item.label,
+            url: item.url,
+            sortOrder: item.sortOrder !== undefined ? item.sortOrder : idx,
+            isVisible: item.isVisible !== undefined ? Boolean(item.isVisible) : true,
+            openInNewTab: Boolean(item.openInNewTab),
+            linkedPageId: item.linkedPageId || null,
+            linkedServiceId: item.linkedServiceId || null,
+            linkedIndustryId: item.linkedIndustryId || null
+          }))
+        });
+      }
+    }
+
+    const updated = await prisma.navigationMenu.update({
+      where: { key },
+      data: {
+        status: 'PUBLISHED',
+        version: { increment: 1 },
+        draftData: null
+      },
+      include: { items: { orderBy: { sortOrder: 'asc' } } }
+    });
+
+    await logAudit(req.user?.userId, 'PUBLISH_NAVIGATION', 'NavigationMenu', updated.id);
+    return res.json({ success: true, data: updated });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// -----------------------------------------------------------------------------
+// 10. NOTIFICATIONS & SESSIONS
+// -----------------------------------------------------------------------------
+
+// GET /api/admin/notifications
+router.get('/notifications', requireRole(['SUPER_ADMIN', 'ADMIN', 'EDITOR']), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const [notifications, unreadCount] = await Promise.all([
+      prisma.adminNotification.findMany({
+        where: {
+          OR: [
+            { userId: null },
+            { userId: req.user?.userId }
+          ]
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 30
+      }),
+      prisma.adminNotification.count({
+        where: {
+          isRead: false,
+          OR: [
+            { userId: null },
+            { userId: req.user?.userId }
+          ]
+        }
+      })
+    ]);
+
+    return res.json({ success: true, unreadCount, data: notifications });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// POST /api/admin/notifications/:id/read
+router.post('/notifications/:id/read', requireRole(['SUPER_ADMIN', 'ADMIN', 'EDITOR']), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const id = req.params.id as string;
+    await prisma.adminNotification.update({ where: { id }, data: { isRead: true } });
+    return res.json({ success: true, id });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// POST /api/admin/notifications/mark-all-read
+router.post('/notifications/mark-all-read', requireRole(['SUPER_ADMIN', 'ADMIN', 'EDITOR']), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    await prisma.adminNotification.updateMany({
+      where: {
+        OR: [
+          { userId: null },
+          { userId: req.user?.userId }
+        ]
+      },
+      data: { isRead: true }
+    });
+    return res.json({ success: true });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// GET /api/admin/sessions
+router.get('/sessions', requireRole(['SUPER_ADMIN', 'ADMIN', 'EDITOR']), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const sessions = await prisma.adminSession.findMany({
+      where: { userId: req.user?.userId },
+      orderBy: { lastActiveAt: 'desc' }
+    });
+    return res.json({ success: true, data: sessions });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// DELETE /api/admin/sessions/:id
+router.delete('/sessions/:id', requireRole(['SUPER_ADMIN', 'ADMIN', 'EDITOR']), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const id = req.params.id as string;
+    await prisma.adminSession.delete({ where: { id } });
+    return res.json({ success: true, id });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// -----------------------------------------------------------------------------
+// 11. SYSTEM BACKUPS API (SUPER_ADMIN ONLY)
+// -----------------------------------------------------------------------------
+
+// GET /api/admin/backups - List database backups on disk
+router.get('/backups', requireRole(['SUPER_ADMIN']), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const backupDir = process.env.NODE_ENV === 'production'
+      ? '/opt/digitalclik/backups/db'
+      : path.resolve('backups');
+
+    if (!fs.existsSync(backupDir)) {
+      return res.json({ success: true, data: [] });
+    }
+
+    const files = await fs.promises.readdir(backupDir);
+    const backups = await Promise.all(
+      files
+        .filter(f => f.endsWith('.sql.gz') || f.endsWith('.sql'))
+        .map(async (filename) => {
+          const stats = await fs.promises.stat(path.join(backupDir, filename));
+          return {
+            filename,
+            sizeBytes: stats.size,
+            sizeFormatted: `${(stats.size / 1024 / 1024).toFixed(2)} MB`,
+            createdAt: stats.mtime.toISOString()
+          };
+        })
+    );
+
+    backups.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return res.json({ success: true, count: backups.length, data: backups });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// POST /api/admin/backups/create - Trigger live database backup
+router.post('/backups/create', requireRole(['SUPER_ADMIN']), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const backupScript = '/opt/digitalclik/backup.sh';
+    if (!fs.existsSync(backupScript)) {
+      return res.status(400).json({ success: false, error: { message: 'Backup script not found in current environment' } });
+    }
+
+    const { stdout, stderr } = await execPromise(backupScript);
+    await logAudit(req.user?.userId, 'CREATE_DATABASE_BACKUP', 'System', undefined, { output: stdout.trim() });
+
+    return res.json({
+      success: true,
+      message: 'Database backup generated successfully',
+      output: stdout.trim()
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// -----------------------------------------------------------------------------
+// 12. SYSTEM HEALTH & DIAGNOSTICS (EXTENDED PRO)
 // -----------------------------------------------------------------------------
 
 // GET /api/admin/system-health
@@ -660,11 +1516,13 @@ router.get('/system-health', requireRole(['SUPER_ADMIN', 'ADMIN']), async (req: 
     await prisma.$queryRaw`SELECT 1`;
     const dbLatencyMs = Date.now() - startDb;
 
-    const [pageCount, mediaCount, userCount, leadCount] = await Promise.all([
+    const [pageCount, mediaCount, userCount, leadCount, redirectsCount, open404Count] = await Promise.all([
       prisma.page.count({ where: { deletedAt: null } }),
-      prisma.mediaItem.count(),
+      prisma.mediaItem.count({ where: { isTrashed: false } }),
       prisma.adminUser.count(),
-      prisma.contactSubmission.count()
+      prisma.contactSubmission.count(),
+      prisma.redirect.count({ where: { isActive: true } }),
+      prisma.notFoundLog.count({ where: { isResolved: false, isIgnored: false } })
     ]);
 
     const mem = process.memoryUsage();
@@ -698,11 +1556,17 @@ router.get('/system-health', requireRole(['SUPER_ADMIN', 'ADMIN']), async (req: 
           mode: process.env.STORAGE_PROVIDER || 'local',
           uploadDir: process.env.UPLOAD_DIR || 'uploads/'
         },
+        scheduler: {
+          status: 'ACTIVE',
+          frequency: 'Every 60 seconds'
+        },
         stats: {
           totalPages: pageCount,
           totalMedia: mediaCount,
           totalAdmins: userCount,
-          totalLeads: leadCount
+          totalLeads: leadCount,
+          activeRedirects: redirectsCount,
+          unresolved404s: open404Count
         }
       }
     });

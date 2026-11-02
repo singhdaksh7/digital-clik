@@ -1,22 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Search, AlertTriangle, CheckCircle, ExternalLink, 
-  CornerDownRight, RefreshCw, ShieldAlert, ArrowRight, FileText
+  Search, AlertTriangle, CheckCircle2, XCircle, RefreshCw, 
+  ExternalLink, ArrowRight, Link as LinkIcon, Network, GitMerge, FileText,
+  ShieldCheck, AlertCircle, HelpCircle
 } from 'lucide-react';
-import { getSeoOverview } from '../api/admin';
+import { getSeoOverview, getInternalLinkGraph, getRedirectChains } from '../api/admin';
 
 export default function SEOOverviewCMS({ onNavigate }) {
   const [data, setData] = useState(null);
+  const [linkGraph, setLinkGraph] = useState(null);
+  const [chains, setChains] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('audit'); // 'audit' | 'links' | 'chains'
   const [severityFilter, setSeverityFilter] = useState('ALL');
+  const [searchIssue, setSearchIssue] = useState('');
 
   const fetchOverview = async () => {
     try {
       setLoading(true);
-      const res = await getSeoOverview();
-      if (res.success) {
-        setData(res.data);
-      }
+      const [seoRes, graphRes, chainsRes] = await Promise.all([
+        getSeoOverview(),
+        getInternalLinkGraph().catch(() => ({ success: false })),
+        getRedirectChains().catch(() => ({ success: false }))
+      ]);
+
+      if (seoRes.success) setData(seoRes.data);
+      if (graphRes.success) setLinkGraph(graphRes.data);
+      if (chainsRes.success) setChains(chainsRes.data);
     } catch (err) {
       console.error('Failed to fetch SEO overview:', err);
     } finally {
@@ -29,7 +39,12 @@ export default function SEOOverviewCMS({ onNavigate }) {
   }, []);
 
   if (loading && !data) {
-    return <div style={{ padding: '2rem', color: '#737373' }}>Analyzing site-wide SEO performance...</div>;
+    return (
+      <div className="py-24 text-center text-neutral-400">
+        <RefreshCw size={24} className="mx-auto mb-2 animate-spin text-emerald-500" />
+        <p>Analyzing site-wide SEO metadata, link topology, and redirect graph...</p>
+      </div>
+    );
   }
 
   const {
@@ -38,206 +53,356 @@ export default function SEOOverviewCMS({ onNavigate }) {
     publishedPostsCount = 0,
     servicesCount = 0,
     projectsCount = 0,
-    redirectsCount = 0,
-    open404s = 0,
-    totalIssues = 0,
-    highSeverityIssues = 0,
-    mediumSeverityIssues = 0,
+    statusCounts = { healthy: 0, warnings: 0, needsAttention: 0 },
+    counters = {},
     issues = []
   } = data || {};
 
   const filteredIssues = issues.filter(issue => {
-    if (severityFilter === 'ALL') return true;
-    return issue.severity === severityFilter;
+    if (severityFilter !== 'ALL' && issue.severity !== severityFilter) return false;
+    if (searchIssue.trim()) {
+      const q = searchIssue.toLowerCase();
+      return (
+        issue.title?.toLowerCase().includes(q) ||
+        issue.url?.toLowerCase().includes(q) ||
+        issue.details?.toLowerCase().includes(q) ||
+        issue.type?.toLowerCase().includes(q)
+      );
+    }
+    return true;
   });
 
-  const healthScore = totalIndexable > 0 
-    ? Math.max(0, Math.round(((totalIndexable - highSeverityIssues) / totalIndexable) * 100))
-    : 100;
+  const checkCards = [
+    { label: 'Missing Meta Titles', count: counters.missingMetaTitle || 0, severity: 'critical' },
+    { label: 'Missing Descriptions', count: counters.missingMetaDescription || 0, severity: 'critical' },
+    { label: 'Duplicate Titles', count: counters.duplicateMetaTitle || 0, severity: 'warning' },
+    { label: 'Duplicate Descriptions', count: counters.duplicateMetaDescription || 0, severity: 'warning' },
+    { label: 'Missing H1 Tags', count: counters.missingH1 || 0, severity: 'warning' },
+    { label: 'Multiple H1 Tags', count: counters.multipleH1 || 0, severity: 'warning' },
+    { label: 'Missing Image Alt Text', count: counters.missingAltText || 0, severity: 'warning' },
+    { label: 'Broken Internal Links', count: counters.brokenInternalLinks || 0, severity: 'critical' },
+    { label: 'Noindex on Published', count: counters.noindexPages || 0, severity: 'warning' },
+    { label: 'Canonical Problems', count: counters.canonicalProblems || 0, severity: 'warning' },
+    { label: 'Unresolved 404s', count: counters.open404s || 0, severity: 'critical' },
+    { label: 'Redirect Chains', count: counters.redirectChains || 0, severity: 'warning' },
+  ];
 
   return (
-    <div style={{ maxWidth: '1200px' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+    <div className="space-y-6">
+      {/* Page Title & Refresh */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 900, color: '#0A0A0A', margin: 0 }}>
-            SEO Health & Metadata Audit
-          </h1>
-          <p style={{ color: '#737373', fontSize: '0.9rem', marginTop: '0.35rem' }}>
-            Site-wide crawler readiness, metadata completeness, OpenGraph assets, and indexation status.
+          <h1 className="text-2xl font-bold text-white tracking-tight">SEO Health & Audit</h1>
+          <p className="text-sm text-neutral-400">
+            Factual counters, link integrity, and crawler metadata across {totalIndexable} indexable URLs.
           </p>
         </div>
-
         <button
           onClick={fetchOverview}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            backgroundColor: '#FFFFFF',
-            border: '1px solid #D4D4D4',
-            padding: '0.65rem 1rem',
-            borderRadius: '6px',
-            fontSize: '0.85rem',
-            fontWeight: 700,
-            cursor: 'pointer'
-          }}
+          className="flex items-center gap-2 px-3.5 py-2 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-white text-xs font-semibold rounded-lg transition"
         >
-          <RefreshCw size={15} /> Refresh Audit
+          <RefreshCw size={14} />
+          <span>Rerun Audit</span>
         </button>
       </div>
 
-      {/* Top Metric Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
-        
-        {/* Health Score */}
-        <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #E5E5E5', borderRadius: '12px', padding: '1.25rem' }}>
-          <div style={{ fontSize: '0.8rem', color: '#737373', fontWeight: 700 }}>SEO Health Score</div>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', marginTop: '0.5rem' }}>
-            <span style={{ fontSize: '2rem', fontWeight: 900, color: healthScore >= 80 ? '#166534' : healthScore >= 50 ? '#D97706' : '#DC2626' }}>
-              {healthScore}%
-            </span>
-            <span style={{ fontSize: '0.78rem', color: '#737373' }}>readiness</span>
+      {/* Factual Status Triage (No fake percentage scores!) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-emerald-950/20 border border-emerald-900/40 rounded-xl p-4 flex items-center gap-4">
+          <div className="p-3 bg-emerald-500/10 rounded-lg text-emerald-400">
+            <CheckCircle2 size={24} />
           </div>
-          <div style={{ marginTop: '0.6rem', height: '6px', backgroundColor: '#F3F4F6', borderRadius: '3px', overflow: 'hidden' }}>
-            <div style={{ width: `${healthScore}%`, height: '100%', backgroundColor: healthScore >= 80 ? '#22C55E' : healthScore >= 50 ? '#F59E0B' : '#EF4444' }} />
+          <div>
+            <div className="text-2xl font-bold text-emerald-400">{statusCounts.healthy}</div>
+            <div className="text-xs font-semibold text-neutral-300">Healthy Entities</div>
+            <div className="text-[11px] text-neutral-500">Fully compliant with title, desc & canonicals</div>
           </div>
         </div>
 
-        {/* Indexable Entities */}
-        <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #E5E5E5', borderRadius: '12px', padding: '1.25rem' }}>
-          <div style={{ fontSize: '0.8rem', color: '#737373', fontWeight: 700 }}>Indexable URLs</div>
-          <div style={{ fontSize: '2rem', fontWeight: 900, color: '#0A0A0A', marginTop: '0.5rem' }}>
-            {totalIndexable}
+        <div className="bg-amber-950/20 border border-amber-900/40 rounded-xl p-4 flex items-center gap-4">
+          <div className="p-3 bg-amber-500/10 rounded-lg text-amber-400">
+            <AlertTriangle size={24} />
           </div>
-          <div style={{ fontSize: '0.75rem', color: '#737373', marginTop: '0.3rem' }}>
-            {publishedPagesCount} pages • {publishedPostsCount} blogs • {servicesCount + projectsCount} services
-          </div>
-        </div>
-
-        {/* Active 301/302 Redirects */}
-        <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #E5E5E5', borderRadius: '12px', padding: '1.25rem' }}>
-          <div style={{ fontSize: '0.8rem', color: '#737373', fontWeight: 700 }}>Active Redirect Rules</div>
-          <div style={{ fontSize: '2rem', fontWeight: 900, color: '#0A0A0A', marginTop: '0.5rem' }}>
-            {redirectsCount}
-          </div>
-          <div style={{ fontSize: '0.75rem', color: '#166534', marginTop: '0.3rem', fontWeight: 700 }}>
-            Cached in Edge & Express
+          <div>
+            <div className="text-2xl font-bold text-amber-400">{statusCounts.warnings}</div>
+            <div className="text-xs font-semibold text-neutral-300">Active Warnings</div>
+            <div className="text-[11px] text-neutral-500">Missing alt text, duplicate copy, or chains</div>
           </div>
         </div>
 
-        {/* 404 Errors */}
-        <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #E5E5E5', borderRadius: '12px', padding: '1.25rem' }}>
-          <div style={{ fontSize: '0.8rem', color: '#737373', fontWeight: 700 }}>Captured 404 URLs</div>
-          <div style={{ fontSize: '2rem', fontWeight: 900, color: open404s > 0 ? '#DC2626' : '#0A0A0A', marginTop: '0.5rem' }}>
-            {open404s}
+        <div className="bg-red-950/20 border border-red-900/40 rounded-xl p-4 flex items-center gap-4">
+          <div className="p-3 bg-red-500/10 rounded-lg text-red-400">
+            <XCircle size={24} />
           </div>
-          <div style={{ fontSize: '0.75rem', color: '#737373', marginTop: '0.3rem' }}>
-            Unresolved broken visitor requests
+          <div>
+            <div className="text-2xl font-bold text-red-400">{statusCounts.needsAttention}</div>
+            <div className="text-xs font-semibold text-neutral-300">Needs Attention</div>
+            <div className="text-[11px] text-neutral-500">Missing titles, 404 errors, broken internal links</div>
           </div>
         </div>
-
       </div>
 
-      {/* Issues Table Section */}
-      <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #E5E5E5', borderRadius: '12px', padding: '1.5rem' }}>
-        
-        {/* Table Header & Filters */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-          <div>
-            <h2 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0, color: '#0A0A0A' }}>
-              Detected SEO Issues & Warnings ({totalIssues})
-            </h2>
-            <div style={{ fontSize: '0.8rem', color: '#737373', marginTop: '0.2rem' }}>
-              {highSeverityIssues} high priority (missing title / meta description)
+      {/* 12 Factual Check Metrics */}
+      <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
+        <h2 className="text-xs font-bold uppercase tracking-wider text-neutral-400 mb-3">
+          12 Core SEO & Indexation Metrics
+        </h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5">
+          {checkCards.map((chk, i) => (
+            <div
+              key={i}
+              className={`p-3 rounded-lg border text-center transition ${
+                chk.count > 0
+                  ? chk.severity === 'critical'
+                    ? 'bg-red-500/10 border-red-500/30'
+                    : 'bg-amber-500/10 border-amber-500/30'
+                  : 'bg-neutral-950/50 border-neutral-800/80'
+              }`}
+            >
+              <div
+                className={`text-xl font-bold ${
+                  chk.count > 0
+                    ? chk.severity === 'critical'
+                      ? 'text-red-400'
+                      : 'text-amber-400'
+                    : 'text-emerald-400'
+                }`}
+              >
+                {chk.count}
+              </div>
+              <div className="text-[11px] text-neutral-300 font-medium truncate mt-0.5" title={chk.label}>
+                {chk.label}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Navigation Sub-Tabs */}
+      <div className="flex border-b border-neutral-800 space-x-6 text-sm">
+        <button
+          onClick={() => setActiveTab('audit')}
+          className={`pb-3 font-medium transition flex items-center gap-2 border-b-2 ${
+            activeTab === 'audit'
+              ? 'border-emerald-500 text-emerald-400'
+              : 'border-transparent text-neutral-400 hover:text-white'
+          }`}
+        >
+          <FileText size={15} />
+          <span>Issues Audit ({filteredIssues.length})</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('links')}
+          className={`pb-3 font-medium transition flex items-center gap-2 border-b-2 ${
+            activeTab === 'links'
+              ? 'border-emerald-500 text-emerald-400'
+              : 'border-transparent text-neutral-400 hover:text-white'
+          }`}
+        >
+          <Network size={15} />
+          <span>Internal Link Graph</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('chains')}
+          className={`pb-3 font-medium transition flex items-center gap-2 border-b-2 ${
+            activeTab === 'chains'
+              ? 'border-emerald-500 text-emerald-400'
+              : 'border-transparent text-neutral-400 hover:text-white'
+          }`}
+        >
+          <GitMerge size={15} />
+          <span>Redirect Chains ({chains?.length || 0})</span>
+        </button>
+      </div>
+
+      {/* Tab 1: Issues Audit */}
+      {activeTab === 'audit' && (
+        <div className="space-y-4">
+          {/* Filters */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search size={15} className="absolute left-3 top-3 text-neutral-400" />
+              <input
+                type="text"
+                placeholder="Search issues by title, path, or rule..."
+                value={searchIssue}
+                onChange={e => setSearchIssue(e.target.value)}
+                className="w-full bg-neutral-900 border border-neutral-800 rounded-lg pl-9 pr-3 py-2 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-neutral-600"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              {['ALL', 'CRITICAL', 'WARNING'].map(sev => (
+                <button
+                  key={sev}
+                  onClick={() => setSeverityFilter(sev)}
+                  className={`px-3 py-2 rounded-lg text-xs font-semibold transition ${
+                    severityFilter === sev
+                      ? 'bg-neutral-800 text-white border border-neutral-700'
+                      : 'bg-neutral-900 text-neutral-400 border border-neutral-800 hover:text-white'
+                  }`}
+                >
+                  {sev}
+                </button>
+              ))}
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '0.4rem' }}>
-            {['ALL', 'HIGH', 'MEDIUM', 'LOW'].map(sev => (
-              <button
-                key={sev}
-                onClick={() => setSeverityFilter(sev)}
-                style={{
-                  padding: '0.4rem 0.8rem',
-                  borderRadius: '6px',
-                  border: 'none',
-                  fontSize: '0.78rem',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  backgroundColor: severityFilter === sev ? '#0A0A0A' : '#F3F4F6',
-                  color: severityFilter === sev ? '#FFFFFF' : '#525252'
-                }}
-              >
-                {sev}
-              </button>
-            ))}
+          {/* Table */}
+          {filteredIssues.length === 0 ? (
+            <div className="py-16 text-center border border-dashed border-neutral-800 rounded-xl">
+              <CheckCircle2 size={36} className="mx-auto text-emerald-500 mb-2" />
+              <h3 className="text-white font-medium text-sm">No issues matching filters</h3>
+              <p className="text-xs text-neutral-500 mt-1">All scanned pages and posts passed this check criteria.</p>
+            </div>
+          ) : (
+            <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden">
+              <table className="w-full text-left text-xs text-neutral-300">
+                <thead className="bg-neutral-950 border-b border-neutral-800 uppercase text-[10px] text-neutral-400">
+                  <tr>
+                    <th className="p-3">Severity</th>
+                    <th className="p-3">Entity / URL</th>
+                    <th className="p-3">Audit Rule</th>
+                    <th className="p-3">Details & Resolution</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-800/70">
+                  {filteredIssues.map((iss, idx) => (
+                    <tr key={idx} className="hover:bg-neutral-800/40">
+                      <td className="p-3">
+                        <span
+                          className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                            iss.severity === 'CRITICAL'
+                              ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                              : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                          }`}
+                        >
+                          {iss.severity}
+                        </span>
+                      </td>
+                      <td className="p-3">
+                        <div className="font-semibold text-white">{iss.title || iss.entity}</div>
+                        <div className="text-neutral-500 font-mono text-[11px] truncate max-w-xs">{iss.url}</div>
+                      </td>
+                      <td className="p-3 font-medium text-neutral-300">
+                        {iss.type?.replace(/_/g, ' ')}
+                      </td>
+                      <td className="p-3 text-neutral-400">
+                        {iss.details}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Tab 2: Internal Link Graph */}
+      {activeTab === 'links' && (
+        <div className="space-y-4">
+          <div className="p-4 bg-neutral-900 border border-neutral-800 rounded-xl flex items-center justify-between text-xs text-neutral-400">
+            <div>
+              <strong className="text-white">Internal Link Graph & Orphan Detection</strong>
+              <p className="mt-0.5">Scans internal anchor tags across Page Blocks, identifying orphan pages and outgoing dead ends.</p>
+            </div>
+            <div className="text-right">
+              <span className="text-white font-bold">{linkGraph?.pages?.length || 0}</span> pages analyzed
+            </div>
+          </div>
+
+          <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden">
+            <table className="w-full text-left text-xs text-neutral-300">
+              <thead className="bg-neutral-950 border-b border-neutral-800 uppercase text-[10px] text-neutral-400">
+                <tr>
+                  <th className="p-3">Page Slug</th>
+                  <th className="p-3">Title</th>
+                  <th className="p-3 text-center">Inbound Links</th>
+                  <th className="p-3 text-center">Outbound Links</th>
+                  <th className="p-3 text-center">Broken Targets</th>
+                  <th className="p-3">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-800/70">
+                {linkGraph?.pages?.map((p, idx) => {
+                  const isOrphan = p.inboundCount === 0 && p.slug !== '';
+                  const hasBroken = p.brokenOutbound?.length > 0;
+
+                  return (
+                    <tr key={idx} className="hover:bg-neutral-800/40">
+                      <td className="p-3 font-mono text-neutral-300">
+                        /{p.slug}
+                      </td>
+                      <td className="p-3 text-white font-medium">{p.title}</td>
+                      <td className="p-3 text-center">
+                        <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${isOrphan ? 'bg-amber-500/20 text-amber-300' : 'bg-neutral-800 text-neutral-300'}`}>
+                          {p.inboundCount}
+                        </span>
+                      </td>
+                      <td className="p-3 text-center text-neutral-400">{p.outboundCount}</td>
+                      <td className="p-3 text-center">
+                        {hasBroken ? (
+                          <span className="px-2 py-0.5 bg-red-500/20 text-red-300 rounded font-bold text-[11px]">
+                            {p.brokenOutbound.length} broken
+                          </span>
+                        ) : (
+                          <span className="text-neutral-500">0</span>
+                        )}
+                      </td>
+                      <td className="p-3">
+                        {isOrphan ? (
+                          <span className="text-amber-400 text-[11px]">⚠️ Orphan page (0 internal links)</span>
+                        ) : hasBroken ? (
+                          <span className="text-red-400 text-[11px]">⚠️ Links to invalid slug</span>
+                        ) : (
+                          <span className="text-emerald-400 text-[11px]">✅ Connected</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </div>
+      )}
 
-        {/* Table */}
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
-            <thead>
-              <tr style={{ backgroundColor: '#FAFAFA', borderBottom: '1px solid #E5E5E5', color: '#737373', fontSize: '0.75rem', textTransform: 'uppercase' }}>
-                <th style={{ padding: '0.75rem 1rem' }}>Severity</th>
-                <th style={{ padding: '0.75rem 1rem' }}>Issue Type</th>
-                <th style={{ padding: '0.75rem 1rem' }}>Resource Title</th>
-                <th style={{ padding: '0.75rem 1rem' }}>Path</th>
-                <th style={{ padding: '0.75rem 1rem' }}>Details</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredIssues.map((issue, idx) => (
-                <tr key={idx} style={{ borderBottom: '1px solid #F5F5F5' }}>
-                  <td style={{ padding: '0.85rem 1rem' }}>
-                    <span style={{
-                      padding: '0.25rem 0.55rem',
-                      borderRadius: '4px',
-                      fontSize: '0.72rem',
-                      fontWeight: 800,
-                      backgroundColor: issue.severity === 'HIGH' ? '#FEE2E2' : issue.severity === 'MEDIUM' ? '#FEF3C7' : '#EFF6FF',
-                      color: issue.severity === 'HIGH' ? '#DC2626' : issue.severity === 'MEDIUM' ? '#D97706' : '#2563EB'
-                    }}>
-                      {issue.severity}
-                    </span>
-                  </td>
-                  <td style={{ padding: '0.85rem 1rem', fontWeight: 700, color: '#171717', fontSize: '0.82rem' }}>
-                    {issue.type.replace(/_/g, ' ')}
-                  </td>
-                  <td style={{ padding: '0.85rem 1rem', color: '#0A0A0A' }}>
-                    {issue.title}
-                  </td>
-                  <td style={{ padding: '0.85rem 1rem' }}>
-                    <a
-                      href={issue.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      style={{ color: 'var(--dc-purple)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.82rem' }}
-                    >
-                      {issue.url} <ExternalLink size={12} />
-                    </a>
-                  </td>
-                  <td style={{ padding: '0.85rem 1rem', color: '#737373', fontSize: '0.8rem' }}>
-                    {issue.details || 'Required for optimal search ranking'}
-                  </td>
-                </tr>
+      {/* Tab 3: Redirect Chains */}
+      {activeTab === 'chains' && (
+        <div className="space-y-4">
+          <div className="p-4 bg-neutral-900 border border-neutral-800 rounded-xl text-xs text-neutral-400">
+            <strong className="text-white">Multi-Hop Redirect Chains</strong>
+            <p className="mt-0.5">Detects redirects that point to other redirect rules (e.g. /a → /b → /c). Chains waste crawl budget and increase TTFB latency.</p>
+          </div>
+
+          {chains && chains.length > 0 ? (
+            <div className="space-y-3">
+              {chains.map((c, idx) => (
+                <div key={idx} className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-3 text-xs">
+                    <span className="font-mono bg-neutral-950 px-2.5 py-1.5 rounded text-neutral-300">{c.source}</span>
+                    <ArrowRight size={14} className="text-neutral-500" />
+                    <span className="font-mono bg-amber-500/20 text-amber-300 px-2.5 py-1.5 rounded border border-amber-500/30">{c.intermediate}</span>
+                    <ArrowRight size={14} className="text-neutral-500" />
+                    <span className="font-mono bg-emerald-500/20 text-emerald-300 px-2.5 py-1.5 rounded border border-emerald-500/30">{c.target}</span>
+                  </div>
+
+                  <div className="text-xs text-neutral-400">
+                    Fix: Point <code className="text-white">{c.source}</code> directly to <code className="text-emerald-400">{c.target}</code>
+                  </div>
+                </div>
               ))}
-              {filteredIssues.length === 0 && (
-                <tr>
-                  <td colSpan={5} style={{ padding: '2.5rem', textAlign: 'center', color: '#166534' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
-                      <CheckCircle size={24} color="#166534" />
-                      <span style={{ fontWeight: 700 }}>Zero SEO issues detected in this category!</span>
-                    </div>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+            </div>
+          ) : (
+            <div className="py-16 text-center border border-dashed border-neutral-800 rounded-xl">
+              <CheckCircle2 size={36} className="mx-auto text-emerald-500 mb-2" />
+              <h3 className="text-white font-medium text-sm">No redirect chains detected</h3>
+              <p className="text-xs text-neutral-500 mt-1">All active redirect rules resolve directly to destinations in 1 hop.</p>
+            </div>
+          )}
         </div>
-
-      </div>
+      )}
     </div>
   );
 }

@@ -524,6 +524,13 @@ const contactSchema = z.object({
   subject: z.string().optional(),
   message: z.string().min(5),
   sourcePage: z.string().optional(),
+  utm_source: z.string().optional(),
+  utm_medium: z.string().optional(),
+  utm_campaign: z.string().optional(),
+  utm_term: z.string().optional(),
+  utm_content: z.string().optional(),
+  landingPage: z.string().optional(),
+  referrer: z.string().optional(),
   hp: z.string().optional() // Honeypot
 });
 
@@ -531,16 +538,38 @@ router.post('/contact', formRateLimiter(), async (req: Request, res: Response) =
   try {
     // Honeypot check
     if (req.body.hp || req.body.website_hp) {
-      console.warn('🤖 Bot honeypot caught contact submission');
+      console.warn('Bot honeypot caught contact submission');
       return res.json({ success: true, data: { message: 'Submission received' } });
     }
 
     const parsed = contactSchema.parse(req.body);
-    const { hp, ...data } = parsed;
+    const { hp, utm_source, utm_medium, utm_campaign, utm_term, utm_content, landingPage, referrer, ...data } = parsed;
 
     const submission = await prisma.contactSubmission.create({
-      data
+      data: {
+        ...data,
+        utmSource: utm_source || null,
+        utmMedium: utm_medium || null,
+        utmCampaign: utm_campaign || null,
+        utmTerm: utm_term || null,
+        utmContent: utm_content || null,
+        landingPage: landingPage || null,
+        referrer: referrer || (req.headers.referer as string) || null,
+        timelineJson: JSON.stringify([
+          { type: 'LEAD_CREATED', source: data.sourcePage || 'Contact Page', timestamp: new Date().toISOString() }
+        ])
+      }
     });
+
+    // Notify admins via in-app alert
+    await prisma.adminNotification.create({
+      data: {
+        type: 'LEAD_RECEIVED',
+        title: 'New Contact Submission',
+        message: `${submission.name} (${submission.email}) submitted a message.`,
+        link: '/admin?tab=leads'
+      }
+    }).catch(() => {});
 
     // Safe email notification
     sendNotificationEmail({
@@ -575,13 +604,19 @@ const auditSchema = z.object({
   monthlySpend: z.string().optional(),
   message: z.string().optional(),
   sourcePage: z.string().optional(),
+  utm_source: z.string().optional(),
+  utm_medium: z.string().optional(),
+  utm_campaign: z.string().optional(),
+  utm_term: z.string().optional(),
+  utm_content: z.string().optional(),
+  referrer: z.string().optional(),
   hp: z.string().optional() // Honeypot
 });
 
 router.post('/project-enquiries', formRateLimiter(), async (req: Request, res: Response) => {
   try {
     if (req.body.hp || req.body.website_hp) {
-      console.warn('🤖 Bot honeypot caught project enquiry submission');
+      console.warn('Bot honeypot caught project enquiry submission');
       return res.json({ success: true, data: { message: 'Submission received' } });
     }
 
@@ -596,9 +631,27 @@ router.post('/project-enquiries', formRateLimiter(), async (req: Request, res: R
         services: parsed.services ? JSON.stringify(parsed.services) : undefined,
         monthlySpend: parsed.monthlySpend,
         message: parsed.message,
-        sourcePage: parsed.sourcePage
+        sourcePage: parsed.sourcePage,
+        utmSource: parsed.utm_source || null,
+        utmMedium: parsed.utm_medium || null,
+        utmCampaign: parsed.utm_campaign || null,
+        utmTerm: parsed.utm_term || null,
+        utmContent: parsed.utm_content || null,
+        referrer: parsed.referrer || (req.headers.referer as string) || null,
+        timelineJson: JSON.stringify([
+          { type: 'LEAD_CREATED', source: parsed.sourcePage || 'Audit Modal', timestamp: new Date().toISOString() }
+        ])
       }
     });
+
+    await prisma.adminNotification.create({
+      data: {
+        type: 'LEAD_RECEIVED',
+        title: 'New Project Audit Request',
+        message: `${enquiry.name} (${enquiry.email}) requested project consultation for ${enquiry.website}.`,
+        link: '/admin?tab=leads'
+      }
+    }).catch(() => {});
 
     sendNotificationEmail({
       to: process.env.NOTIFICATION_EMAIL || 'hello@digitalclik.com',
@@ -645,14 +698,42 @@ router.post('/newsletter', formRateLimiter(), async (req: Request, res: Response
   }
 });
 
-// POST /api/forms/submit - Generic submission for CONTACT_FORM and LEAD_FORM blocks
+// POST /api/forms/submit - Dynamic custom form submission & UTM attribution
 router.post('/forms/submit', formRateLimiter(), async (req: Request, res: Response) => {
   try {
-    const { formName = 'Custom Form', pageSlug, hp, ...fields } = req.body;
+    const {
+      formId,
+      formName = 'Custom Form',
+      pageSlug,
+      hp,
+      utm_source,
+      utm_medium,
+      utm_campaign,
+      utm_term,
+      utm_content,
+      landingPage,
+      referrer,
+      ...fields
+    } = req.body;
 
     // Honeypot check
     if (hp) {
       return res.json({ success: true, message: 'Form submitted successfully' });
+    }
+
+    // If linked to a custom form, validate required fields
+    if (formId) {
+      const customForm = await prisma.customForm.findUnique({
+        where: { id: formId },
+        include: { fields: true }
+      });
+      if (customForm) {
+        for (const f of customForm.fields) {
+          if (f.isRequired && (!fields[f.name] || !String(fields[f.name]).trim())) {
+            return res.status(400).json({ success: false, error: { message: `Field "${f.label}" is required` } });
+          }
+        }
+      }
     }
 
     const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
@@ -661,13 +742,58 @@ router.post('/forms/submit', formRateLimiter(), async (req: Request, res: Respon
     const submission = await prisma.formSubmissionRecord.create({
       data: {
         formName: String(formName),
+        customForm: formId ? { connect: { id: formId } } : undefined,
         pageSlug: pageSlug ? String(pageSlug) : null,
         data: JSON.stringify(fields),
         status: 'NEW',
         clientIp: String(clientIp),
-        userAgent: String(userAgent)
+        userAgent: String(userAgent),
+        utmSource: utm_source || null,
+        utmMedium: utm_medium || null,
+        utmCampaign: utm_campaign || null,
+        utmTerm: utm_term || null,
+        utmContent: utm_content || null,
+        landingPage: landingPage || null,
+        referrer: referrer || (req.headers.referer as string) || null
       }
     });
+
+    // Unify into leads if email is present
+    if (fields.email && typeof fields.email === 'string' && fields.email.includes('@')) {
+      const name = fields.name || fields.fullName || fields.firstName || 'Inquiry Contact';
+      await prisma.contactSubmission.create({
+        data: {
+          name: String(name),
+          email: fields.email.trim(),
+          phone: fields.phone ? String(fields.phone) : null,
+          company: fields.company ? String(fields.company) : null,
+          subject: `Form: ${formName}`,
+          message: JSON.stringify(fields),
+          sourcePage: pageSlug ? `/${pageSlug}` : formName,
+          status: 'NEW',
+          utmSource: utm_source || null,
+          utmMedium: utm_medium || null,
+          utmCampaign: utm_campaign || null,
+          utmTerm: utm_term || null,
+          utmContent: utm_content || null,
+          landingPage: landingPage || null,
+          referrer: referrer || (req.headers.referer as string) || null,
+          timelineJson: JSON.stringify([
+            { type: 'FORM_SUBMISSION', formName, timestamp: new Date().toISOString() }
+          ])
+        }
+      }).catch(() => {});
+    }
+
+    // In-app alert for admins
+    await prisma.adminNotification.create({
+      data: {
+        type: 'FORM_SUBMITTED',
+        title: `New Form Submission: ${formName}`,
+        message: `Received new entry for form "${formName}".`,
+        link: '/admin?tab=form-submissions'
+      }
+    }).catch(() => {});
 
     sendNotificationEmail({
       to: process.env.NOTIFICATION_EMAIL || 'hello@digitalclik.com',
@@ -761,11 +887,18 @@ router.get('/pages/:slug', async (req: Request, res: Response) => {
     });
 
     if (!page || page.status !== 'PUBLISHED' || page.deletedAt) {
-      // Log 404 access
+      // Clean path, remove query parameters, detect bot noise
+      const cleanPath = `/${slug.split('?')[0].toLowerCase()}`;
+      const isBotNoise = /(\.php|wp-|cgi-bin|setup\.cgi|\.env|\.git|eval-stdin|xmlrpc)/i.test(cleanPath);
+
       prisma.notFoundLog.upsert({
-        where: { path: `/${slug}` },
-        update: { count: { increment: 1 }, lastSeen: new Date() },
-        create: { path: `/${slug}`, referrer: (req.headers.referer as string) || null }
+        where: { path: cleanPath },
+        update: { count: { increment: 1 }, lastSeen: new Date(), isIgnored: isBotNoise },
+        create: {
+          path: cleanPath,
+          referrer: (req.headers.referer as string) || null,
+          isIgnored: isBotNoise
+        }
       }).catch(() => {});
 
       return res.status(404).json({ success: false, error: { message: 'Page not found or unpublished' } });

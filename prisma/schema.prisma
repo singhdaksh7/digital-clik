@@ -14,18 +14,20 @@ datasource db {
 // -----------------------------------------------------------------------------
 
 model AdminUser {
-  id            String         @id @default(uuid())
+  id            String              @id @default(uuid())
   name          String
-  email         String         @unique
+  email         String              @unique
   passwordHash  String
-  role          String         @default("ADMIN") // SUPER_ADMIN, ADMIN, EDITOR
-  status        String         @default("ACTIVE") // ACTIVE, INACTIVE
-  tokenVersion  Int            @default(0)
+  role          String              @default("ADMIN") // SUPER_ADMIN, ADMIN, EDITOR
+  status        String              @default("ACTIVE") // ACTIVE, INACTIVE
+  tokenVersion  Int                 @default(0)
   lastLoginAt   DateTime?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
   auditLogs     AuditLog[]
   refreshTokens RefreshToken[]
+  sessions      AdminSession[]
+  notifications AdminNotification[]
 }
 
 model RefreshToken {
@@ -90,6 +92,9 @@ model SiteSettings {
   defaultOgImage       String   @default("/og-image.jpg")
   googleAnalyticsId    String   @default("")
   googleTagManagerId   String   @default("")
+  metaPixelId          String   @default("")
+  timezone             String   @default("Asia/Kolkata")
+  cookieConsentEnabled Boolean  @default(true)
   updatedAt            DateTime @updatedAt
 }
 
@@ -145,6 +150,9 @@ model NavigationMenu {
   id        String           @id @default(uuid())
   key       String           @unique // HEADER, SERVICES_MEGA_MENU, MOBILE, FOOTER
   title     String
+  status    String           @default("PUBLISHED") // DRAFT, PUBLISHED
+  version   Int              @default(1)
+  draftData String?          // JSON snapshot while editing in draft mode
   items     NavigationItem[]
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
@@ -318,6 +326,9 @@ model Project {
   homepageSortOrder   Int              @default(0)
   sortOrder           Int              @default(0)
   status              String           @default("PUBLISHED") // DRAFT, PUBLISHED, ARCHIVED
+  deletedAt           DateTime?
+  locale              String           @default("en")
+  translationGroupId  String?
   metaTitle           String?
   metaDescription     String?
   gallery             ProjectMedia[]
@@ -327,6 +338,7 @@ model Project {
 
   @@index([slug])
   @@index([status])
+  @@index([deletedAt])
   @@index([featuredOnHomepage])
   @@index([sortOrder])
 }
@@ -525,6 +537,9 @@ model BlogPost {
   author          Author?       @relation(fields: [authorId], references: [id], onDelete: SetNull)
   authorName      String        @default("DigitalClik Editorial Team")
   status          String        @default("PUBLISHED") // DRAFT, PUBLISHED, ARCHIVED
+  deletedAt       DateTime?
+  locale          String        @default("en")
+  translationGroupId String?
   publishedAt     DateTime      @default(now())
   featured        Boolean       @default(false)
   metaTitle       String?
@@ -537,6 +552,7 @@ model BlogPost {
 
   @@index([slug])
   @@index([status])
+  @@index([deletedAt])
   @@index([publishedAt])
 }
 
@@ -550,15 +566,35 @@ model BlogPostTag {
 }
 
 model WebhookConfig {
-  id          String   @id @default(uuid())
-  url         String
-  event       String   // ALL, LEAD_CREATED, PAGE_PUBLISHED, FORM_SUBMITTED
-  secret      String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String               @id @default(uuid())
+  name         String               @default("Outbound Webhook")
+  url          String
+  event        String               // ALL, LEAD_CREATED, PAGE_PUBLISHED, FORM_SUBMITTED
+  secret       String?
+  isActive     Boolean              @default(true)
+  deliveryLogs WebhookDeliveryLog[]
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
 
   @@index([event])
+}
+
+model WebhookDeliveryLog {
+  id           String        @id @default(uuid())
+  webhookId    String
+  webhook      WebhookConfig @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+  event        String
+  httpStatus   Int?
+  durationMs   Int?
+  attempt      Int           @default(1)
+  status       String        // SUCCESS, FAILED
+  responseBody String?
+  error        String?
+  createdAt    DateTime      @default(now())
+
+  @@index([webhookId])
+  @@index([createdAt])
+  @@index([status])
 }
 
 model EmailTemplateRecord {
@@ -601,19 +637,28 @@ model TeamMember {
 // -----------------------------------------------------------------------------
 
 model ContactSubmission {
-  id         String   @id @default(uuid())
-  name       String
-  email      String
-  phone      String?
-  company    String?
-  website    String?
-  subject    String?  @default("General Consultation")
-  message    String
-  sourcePage String?  @default("Contact Page")
-  status     String   @default("NEW") // NEW, CONTACTED, QUALIFIED, WON, LOST, SPAM
-  notes      String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id           String   @id @default(uuid())
+  name         String
+  email        String
+  phone        String?
+  company      String?
+  website      String?
+  subject      String?  @default("General Consultation")
+  message      String
+  sourcePage   String?  @default("Contact Page")
+  status       String   @default("NEW") // NEW, CONTACTED, QUALIFIED, PROPOSAL_SENT, WON, LOST, SPAM
+  assignedTo   String?  // Admin username/id
+  notes        String?
+  utmSource    String?
+  utmMedium    String?
+  utmCampaign  String?
+  utmTerm      String?
+  utmContent   String?
+  landingPage  String?
+  referrer     String?
+  timelineJson String?  // JSON array of activity history
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   @@index([email])
   @@index([status])
@@ -632,7 +677,15 @@ model ProjectEnquiry {
   message      String?
   sourcePage   String?  @default("Audit Modal")
   status       String   @default("NEW") // NEW, CONTACTED, QUALIFIED, PROPOSAL_SENT, WON, LOST, SPAM
+  assignedTo   String?
   notes        String?
+  utmSource    String?
+  utmMedium    String?
+  utmCampaign  String?
+  utmTerm      String?
+  utmContent   String?
+  referrer     String?
+  timelineJson String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -670,17 +723,27 @@ model FormOption {
 // -----------------------------------------------------------------------------
 
 model MediaItem {
-  id           String   @id @default(uuid())
+  id           String    @id @default(uuid())
   filename     String
   originalName String
   mimeType     String
   size         Int
   url          String
-  altText      String?  @default("DigitalClik Media Asset")
+  altText      String?   @default("DigitalClik Media Asset")
   caption      String?
-  createdAt    DateTime @default(now())
+  title        String?
+  description  String?
+  collection   String    @default("General")
+  dimensions   String?
+  uploadedBy   String?
+  variantsJson String?   // JSON string e.g. { thumbnail, webp }
+  isTrashed    Boolean   @default(false)
+  trashedAt    DateTime?
+  createdAt    DateTime  @default(now())
 
   @@index([createdAt])
+  @@index([collection])
+  @@index([isTrashed])
 }
 
 // -----------------------------------------------------------------------------
@@ -720,6 +783,20 @@ model Page {
   unpublishAt      DateTime?
   deletedAt        DateTime?
   
+  // Editorial Workflow & Ownership
+  ownerUserId      String?
+  reviewStatus     String         @default("DRAFT") // DRAFT, SUBMITTED, APPROVED, REJECTED
+  reviewNote       String?
+  submittedBy      String?
+  submittedAt      DateTime?
+  approvedBy       String?
+  approvedAt       DateTime?
+  rejectedBy       String?
+  rejectedAt       DateTime?
+  isPinned         Boolean        @default(false)
+  locale           String         @default("en")
+  translationGroupId String?
+
   // Concurrency & Comments
   version          Int            @default(1)
   comments         PageComment[]
@@ -803,34 +880,88 @@ model PageComment {
 }
 
 model NotFoundLog {
-  id        String   @id @default(uuid())
-  path      String   @unique
-  count     Int      @default(1)
-  referrer  String?
-  firstSeen DateTime @default(now())
-  lastSeen  DateTime @updatedAt
-  isIgnored Boolean  @default(false)
+  id                   String   @id @default(uuid())
+  path                 String   @unique
+  count                Int      @default(1)
+  referrer             String?
+  firstSeen            DateTime @default(now())
+  lastSeen             DateTime @updatedAt
+  isIgnored            Boolean  @default(false)
+  isResolved           Boolean  @default(false)
+  resolvedToRedirectId String?
 
   @@index([path])
   @@index([count])
   @@index([lastSeen])
+  @@index([isResolved])
 }
 
 model FormSubmissionRecord {
-  id          String   @id @default(uuid())
-  formName    String   // Contact Form, Lead Form, Audit Form, Custom Form
-  pageSlug    String?
-  data        String   // JSON string of submitted fields
-  status      String   @default("NEW") // NEW, CONTACTED, QUALIFIED, CLOSED, SPAM
-  notes       String?
-  clientIp    String?
-  userAgent   String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String      @id @default(uuid())
+  formName     String      // Contact Form, Lead Form, Audit Form, Custom Form
+  customFormId String?
+  customForm   CustomForm? @relation(fields: [customFormId], references: [id], onDelete: SetNull)
+  pageSlug     String?
+  data         String      // JSON string of submitted fields
+  status       String      @default("NEW") // NEW, CONTACTED, QUALIFIED, WON, LOST, SPAM
+  notes        String?
+  clientIp     String?
+  userAgent    String?
+  utmSource    String?
+  utmMedium    String?
+  utmCampaign  String?
+  utmTerm      String?
+  utmContent   String?
+  landingPage  String?
+  referrer     String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
 
   @@index([formName])
   @@index([status])
   @@index([createdAt])
+  @@index([customFormId])
+}
+
+model CustomForm {
+  id                     String                 @id @default(uuid())
+  name                   String
+  slug                   String                 @unique
+  description            String?
+  successMessage         String?                @default("Thank you for your submission. Our team will get back to you shortly.")
+  redirectUrl            String?
+  notificationRecipients String?
+  autoresponderEnabled   Boolean                @default(false)
+  autoresponderSubject   String?
+  autoresponderBody      String?
+  spamProtection         Boolean                @default(true)
+  isPublished            Boolean                @default(true)
+  fields                 FormField[]
+  submissions            FormSubmissionRecord[]
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime               @updatedAt
+
+  @@index([slug])
+}
+
+model FormField {
+  id             String     @id @default(uuid())
+  formId         String
+  form           CustomForm @relation(fields: [formId], references: [id], onDelete: Cascade)
+  label          String
+  name           String     // form field parameter key
+  type           String     @default("TEXT") // TEXT, EMAIL, PHONE, TEXTAREA, SELECT, RADIO, CHECKBOX, DATE, NUMBER, URL, FILE
+  placeholder    String?
+  isRequired     Boolean    @default(false)
+  helpText       String?
+  optionsJson    String?    // JSON string for options
+  validationJson String?    // JSON rules
+  sortOrder      Int        @default(0)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  @@index([formId])
+  @@index([sortOrder])
 }
 
 model PageRevision {
@@ -847,14 +978,82 @@ model PageRevision {
 }
 
 model Redirect {
-  id         String   @id @default(uuid())
-  sourcePath String   @unique // e.g. "/old-slug" or "/website-dev"
-  targetPath String   // e.g. "/new-slug" or "https://..."
-  statusCode Int      @default(301) // 301 (Permanent) or 302 (Temporary)
-  isActive   Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id         String    @id @default(uuid())
+  sourcePath String    @unique // e.g. "/old-slug" or "/website-dev"
+  targetPath String    // e.g. "/new-slug" or "https://..."
+  statusCode Int       @default(301) // 301 (Permanent) or 302 (Temporary)
+  isActive   Boolean   @default(true)
+  hitCount   Int       @default(0)
+  lastHitAt  DateTime?
+  createdBy  String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
   @@index([sourcePath])
   @@index([isActive])
+}
+
+model AdminNotification {
+  id        String   @id @default(uuid())
+  userId    String?  // null = broadcast to all admins
+  user      AdminUser? @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String   // LEAD_RECEIVED, PAGE_SUBMITTED, PAGE_APPROVED, PAGE_REJECTED, SCHEDULED_PUBLISH, BACKUP_COMPLETED, WEBHOOK_FAILED
+  title     String
+  message   String
+  link      String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+model AdminSession {
+  id           String    @id @default(uuid())
+  userId       String
+  user         AdminUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash    String    @unique
+  userAgent    String?
+  ipAddress    String?
+  lastActiveAt DateTime  @default(now())
+  createdAt    DateTime  @default(now())
+
+  @@index([userId])
+  @@index([tokenHash])
+}
+
+model LegalPage {
+  id        String   @id @default(uuid())
+  slug      String   @unique // privacy, terms, cookies
+  title     String
+  content   String   // Markdown / HTML
+  updatedAt DateTime @updatedAt
+
+  @@index([slug])
+}
+
+model LocationPage {
+  id              String    @id @default(uuid())
+  city            String
+  region          String
+  slug            String    @unique
+  title           String
+  heroTitle       String?
+  heroSubtitle    String?
+  content         String
+  servicesJson    String?
+  projectsJson    String?
+  faqsJson        String?
+  metaTitle       String?
+  metaDescription String?
+  canonicalUrl    String?
+  status          String    @default("PUBLISHED")
+  deletedAt       DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([slug])
+  @@index([status])
+  @@index([deletedAt])
 }

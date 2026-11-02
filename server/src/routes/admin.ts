@@ -14,6 +14,8 @@ import multer from 'multer';
 import crypto from 'crypto';
 import adminPagesRouter from './adminPages.js';
 import adminCmsProRouter from './adminCmsPro.js';
+import adminMediaRouter from './adminMedia.js';
+import adminFormsLeadsRouter from './adminFormsLeads.js';
 
 const router = Router();
 const uploadMemory = multer({ storage: multer.memoryStorage(), limits: { fileSize: 15 * 1024 * 1024 } });
@@ -279,6 +281,8 @@ router.use(requireAuth);
 // Mount page builder & redirects routes
 router.use('/', adminPagesRouter);
 router.use('/', adminCmsProRouter);
+router.use('/', adminMediaRouter);
+router.use('/', adminFormsLeadsRouter);
 
 // -----------------------------------------------------------------------------
 // DASHBOARD METRICS
@@ -925,69 +929,6 @@ router.delete('/blog/:id', requireRole(['SUPER_ADMIN', 'ADMIN']), async (req: Au
     const id = req.params.id as string;
     await prisma.blogPost.delete({ where: { id } });
     await logAudit(req.user?.userId, 'DELETE', 'BlogPost', id);
-    return res.json({ success: true, data: { id } });
-  } catch (err: any) {
-    return res.status(500).json({ success: false, error: { message: err.message } });
-  }
-});
-
-// -----------------------------------------------------------------------------
-// MEDIA LIBRARY & STORAGE PROVIDER API
-// -----------------------------------------------------------------------------
-router.get('/media', async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const items = await prisma.mediaItem.findMany({ orderBy: { createdAt: 'desc' } });
-    return res.json({ success: true, data: items });
-  } catch (err: any) {
-    return res.status(500).json({ success: false, error: { message: err.message } });
-  }
-});
-
-router.post('/media/upload', requireRole(['SUPER_ADMIN', 'ADMIN', 'EDITOR']), uploadMemory.single('file'), async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ success: false, error: { message: 'No file uploaded' } });
-    }
-
-    const { valid, error } = validateUpload(req.file.buffer, req.file.originalname, req.file.mimetype);
-    if (!valid) {
-      return res.status(400).json({ success: false, error: { message: error || 'Upload validation failed' } });
-    }
-
-    const storage = getStorageProvider();
-    const result = await storage.uploadFile(req.file.buffer, req.file.originalname, req.file.mimetype);
-
-    const mediaItem = await prisma.mediaItem.create({
-      data: {
-        filename: result.key,
-        originalName: result.originalName,
-        mimeType: result.mimeType,
-        size: result.size,
-        url: result.url,
-        altText: req.body.altText || req.file.originalname
-      }
-    });
-
-    await logAudit(req.user?.userId, 'UPLOAD_MEDIA', 'MediaItem', mediaItem.id);
-    return res.json({ success: true, data: mediaItem });
-  } catch (err: any) {
-    return res.status(500).json({ success: false, error: { message: err.message } });
-  }
-});
-
-router.delete('/media/:id', requireRole(['SUPER_ADMIN', 'ADMIN']), async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const id = req.params.id as string;
-    const media = await prisma.mediaItem.findUnique({ where: { id } });
-    if (!media) {
-      return res.status(404).json({ success: false, error: { message: 'Media item not found' } });
-    }
-
-    const storage = getStorageProvider();
-    await storage.deleteFile(media.filename);
-
-    await prisma.mediaItem.delete({ where: { id } });
-    await logAudit(req.user?.userId, 'DELETE_MEDIA', 'MediaItem', id);
     return res.json({ success: true, data: { id } });
   } catch (err: any) {
     return res.status(500).json({ success: false, error: { message: err.message } });

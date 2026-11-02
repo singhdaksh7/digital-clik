@@ -173,14 +173,24 @@ export async function updateProcessStep(id, data) {
 }
 
 // Media
-export async function getMediaItems() {
-  return await fetchApi('/admin/media');
+export async function getMediaItems(params = {}) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && v !== '') query.append(k, v);
+  });
+  const qs = query.toString() ? `?${query.toString()}` : '';
+  return await fetchApi(`/admin/media${qs}`);
 }
 
-export async function uploadMediaFile(file) {
+export async function uploadMediaFile(file, metadata = {}) {
   const token = getAuthToken();
   const formData = new FormData();
   formData.append('file', file);
+  if (metadata.collection) formData.append('collection', metadata.collection);
+  if (metadata.altText) formData.append('altText', metadata.altText);
+  if (metadata.title) formData.append('title', metadata.title);
+  if (metadata.caption) formData.append('caption', metadata.caption);
+  if (metadata.description) formData.append('description', metadata.description);
 
   const res = await fetch('/api/admin/media/upload', {
     method: 'POST',
@@ -192,14 +202,55 @@ export async function uploadMediaFile(file) {
 
   const data = await res.json();
   if (!res.ok || data.success === false) {
-    throw new Error(data.error?.message || 'Upload failed');
+    const err = new Error(data.error?.message || 'Upload failed');
+    err.data = data;
+    throw err;
   }
   return data;
 }
 
-export async function deleteMediaItem(id) {
+export async function updateMediaItem(id, data) {
   return await fetchApi(`/admin/media/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data)
+  });
+}
+
+export async function deleteMediaItem(id, options = {}) {
+  const query = new URLSearchParams();
+  if (options.force) query.append('force', 'true');
+  if (options.permanent) query.append('permanent', 'true');
+  const qs = query.toString() ? `?${query.toString()}` : '';
+  return await fetchApi(`/admin/media/${id}${qs}`, {
     method: 'DELETE'
+  });
+}
+
+export async function restoreMediaItem(id) {
+  return await fetchApi(`/admin/media/${id}/restore`, {
+    method: 'POST'
+  });
+}
+
+export async function getMediaReferences(id) {
+  return await fetchApi(`/admin/media/${id}/references`);
+}
+
+export async function getMediaCollections() {
+  return await fetchApi('/admin/media/collections');
+}
+
+export async function replaceMediaEverywhere(oldUrl, newUrl) {
+  return await fetchApi('/admin/media/replace', {
+    method: 'POST',
+    body: JSON.stringify({ oldUrl, newUrl })
+  });
+}
+
+export async function bulkMediaAction(data) {
+  return await fetchApi('/admin/media/bulk', {
+    method: 'POST',
+    body: JSON.stringify(data)
   });
 }
 
@@ -530,4 +581,193 @@ export async function getSeoOverview() {
 
 export async function getSystemHealth() {
   return await fetchApi('/admin/system-health');
+}
+
+// -----------------------------------------------------------------------------
+// FORMS & UNIFIED LEADS
+// -----------------------------------------------------------------------------
+
+export async function getForms() {
+  return await fetchApi('/admin/forms');
+}
+
+export async function getFormById(id) {
+  return await fetchApi(`/admin/forms/${id}`);
+}
+
+export async function createForm(data) {
+  return await fetchApi('/admin/forms', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  });
+}
+
+export async function updateForm(id, data) {
+  return await fetchApi(`/admin/forms/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data)
+  });
+}
+
+export async function deleteForm(id) {
+  return await fetchApi(`/admin/forms/${id}`, {
+    method: 'DELETE'
+  });
+}
+
+export async function getUnifiedLeads(params = {}) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && v !== '') query.append(k, v);
+  });
+  const qs = query.toString() ? `?${query.toString()}` : '';
+  return await fetchApi(`/admin/leads/unified${qs}`);
+}
+
+export async function updateLeadStatus(id, data) {
+  return await fetchApi(`/admin/leads/${id}/status`, {
+    method: 'PUT',
+    body: JSON.stringify(data)
+  });
+}
+
+export function getExportUrl(entity) {
+  return `/api/admin/export/${entity}`;
+}
+
+// -----------------------------------------------------------------------------
+// SEO EXTENSIONS: INTERNAL LINKS, REDIRECT CHAINS & 404 ACTIONS
+// -----------------------------------------------------------------------------
+
+export async function getInternalLinkGraph() {
+  return await fetchApi('/admin/seo/internal-links');
+}
+
+export async function getRedirectChains() {
+  return await fetchApi('/admin/seo/redirect-chains');
+}
+
+export async function resolve404(id, data = {}) {
+  return await fetchApi(`/admin/404-logs/${id}/resolve`, {
+    method: 'POST',
+    body: JSON.stringify(data)
+  });
+}
+
+export async function ignore404(id) {
+  return await fetchApi(`/admin/404-logs/${id}/ignore`, {
+    method: 'POST'
+  });
+}
+
+// -----------------------------------------------------------------------------
+// REVISIONS DIFF & EDITORIAL APPROVAL WORKFLOW
+// -----------------------------------------------------------------------------
+
+export async function getRevisionDiff(pageId, revisionId) {
+  return await fetchApi(`/admin/pages/${pageId}/revisions/${revisionId}/diff`);
+}
+
+export async function submitPageReview(id, data = {}) {
+  return await fetchApi(`/admin/pages/${id}/submit-review`, {
+    method: 'POST',
+    body: JSON.stringify(data)
+  });
+}
+
+export async function approvePage(id) {
+  return await fetchApi(`/admin/pages/${id}/approve`, {
+    method: 'POST'
+  });
+}
+
+export async function rejectPage(id, reason) {
+  return await fetchApi(`/admin/pages/${id}/reject`, {
+    method: 'POST',
+    body: JSON.stringify({ reason })
+  });
+}
+
+export async function getReviewQueue() {
+  return await fetchApi('/admin/review-queue');
+}
+
+// -----------------------------------------------------------------------------
+// SCHEDULED JOBS
+// -----------------------------------------------------------------------------
+
+export async function getScheduledJobs() {
+  return await fetchApi('/admin/scheduled-jobs');
+}
+
+export async function cancelScheduledJob(id, action = 'both') {
+  return await fetchApi(`/admin/scheduled-jobs/${id}/cancel`, {
+    method: 'POST',
+    body: JSON.stringify({ action })
+  });
+}
+
+// -----------------------------------------------------------------------------
+// NAVIGATION DRAFT & PUBLISH
+// -----------------------------------------------------------------------------
+
+export async function getNavigationDetailed(key) {
+  return await fetchApi(`/admin/navigation/${key}/detailed`);
+}
+
+export async function saveNavigationDraft(key, items) {
+  return await fetchApi(`/admin/navigation/${key}/draft`, {
+    method: 'PUT',
+    body: JSON.stringify({ items })
+  });
+}
+
+export async function publishNavigation(key) {
+  return await fetchApi(`/admin/navigation/${key}/publish`, {
+    method: 'POST'
+  });
+}
+
+// -----------------------------------------------------------------------------
+// NOTIFICATIONS & SESSIONS
+// -----------------------------------------------------------------------------
+
+export async function getNotifications() {
+  return await fetchApi('/admin/notifications');
+}
+
+export async function markNotificationRead(id) {
+  return await fetchApi(`/admin/notifications/${id}/read`, {
+    method: 'POST'
+  });
+}
+
+export async function markAllNotificationsRead() {
+  return await fetchApi('/admin/notifications/mark-all-read', {
+    method: 'POST'
+  });
+}
+
+export async function getUserSessions() {
+  return await fetchApi('/admin/sessions');
+}
+
+export async function revokeSession(id) {
+  return await fetchApi(`/admin/sessions/${id}`, {
+    method: 'DELETE'
+  });
+}
+
+// -----------------------------------------------------------------------------
+// BACKUPS
+// -----------------------------------------------------------------------------
+
+export async function getBackups() {
+  return await fetchApi('/admin/backups');
+}
+
+export async function createBackup() {
+  return await fetchApi('/admin/backups/create', {
+    method: 'POST'
+  });
 }

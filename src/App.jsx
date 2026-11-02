@@ -13,6 +13,7 @@ import IndustryGrid from './components/IndustryGrid';
 import Testimonials from './components/Testimonials';
 import AuditModal from './components/AuditModal';
 import Footer from './components/Footer';
+import CookieConsent from './components/CookieConsent';
 
 // Admin CMS Components (Lazy Loaded for Code Splitting)
 const AdminLogin = React.lazy(() => import('./admin/AdminLogin'));
@@ -24,12 +25,14 @@ import ServiceView from './components/Views/ServiceView';
 import CaseStudiesView from './components/Views/CaseStudiesView';
 import ContactView from './components/Views/ContactView';
 import DynamicPageView from './components/Views/DynamicPageView';
+import SearchPage from './pages/SearchPage';
 
 export default function App() {
   const [activePage, setActivePage] = useState(() => {
     const path = window.location.pathname;
     if (path.startsWith('/admin')) return 'admin';
     if (path.startsWith('/preview/page/')) return 'preview';
+    if (path === '/search') return 'search';
     if (path === '/' || path === '') return 'home';
     if (path === '/services') return 'services';
     if (path === '/case-studies') return 'case-studies';
@@ -61,7 +64,6 @@ export default function App() {
   const [cursorState, setCursorState] = useState({ visible: false, text: 'VIEW' });
 
   useEffect(() => {
-    // Check if path is /admin
     if (window.location.pathname.startsWith('/admin')) {
       setActivePage('admin');
     }
@@ -193,6 +195,10 @@ export default function App() {
           <ContactView onOpenAuditModal={openAuditModal} />
         )}
 
+        {activePage === 'search' && (
+          <SearchPage />
+        )}
+
         {activePage === 'dynamic' && (
           <DynamicPageView slug={dynamicSlug} onOpenAuditModal={openAuditModal} />
         )}
@@ -211,6 +217,9 @@ export default function App() {
 
       {/* Global Audit Modal Overlay */}
       <AuditModal isOpen={isAuditModalOpen} onClose={closeAuditModal} />
+
+      {/* GDPR / Privacy Cookie Consent Banner */}
+      <CookieConsent />
 
     </div>
   );

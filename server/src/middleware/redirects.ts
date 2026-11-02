@@ -88,6 +88,20 @@ export async function redirectsMiddleware(req: Request, res: Response, next: Nex
   }
 
   if (finalTarget && visited.size > 0) {
+    // Record hit analytics asynchronously
+    prisma.redirect.updateMany({
+      where: {
+        OR: [
+          { sourcePath: normalized },
+          { sourcePath: path }
+        ]
+      },
+      data: {
+        hitCount: { increment: 1 },
+        lastHitAt: new Date()
+      }
+    }).catch(() => {});
+
     return res.redirect(finalStatus, finalTarget);
   }
 
