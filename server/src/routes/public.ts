@@ -517,6 +517,42 @@ router.post('/newsletter', formRateLimiter(), async (req: Request, res: Response
   }
 });
 
+// POST /api/forms/submit - Generic submission for CONTACT_FORM and LEAD_FORM blocks
+router.post('/forms/submit', formRateLimiter(), async (req: Request, res: Response) => {
+  try {
+    const { formName = 'Custom Form', pageSlug, hp, ...fields } = req.body;
+
+    // Honeypot check
+    if (hp) {
+      return res.json({ success: true, message: 'Form submitted successfully' });
+    }
+
+    const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
+    const userAgent = req.headers['user-agent'] || 'unknown';
+
+    const submission = await prisma.formSubmissionRecord.create({
+      data: {
+        formName: String(formName),
+        pageSlug: pageSlug ? String(pageSlug) : null,
+        data: JSON.stringify(fields),
+        status: 'NEW',
+        clientIp: String(clientIp),
+        userAgent: String(userAgent)
+      }
+    });
+
+    sendNotificationEmail({
+      to: process.env.NOTIFICATION_EMAIL || 'hello@digitalclik.com',
+      subject: `[New Submission] ${formName} on /${pageSlug || 'site'}`,
+      html: `<p>New form submission received for <strong>${formName}</strong>:</p><pre>${JSON.stringify(fields, null, 2)}</pre>`
+    }).catch(() => {});
+
+    return res.status(201).json({ success: true, data: submission });
+  } catch (err: any) {
+    return res.status(400).json({ success: false, error: { message: err.message } });
+  }
+});
+
 // -----------------------------------------------------------------------------
 // DYNAMIC PAGES (PUBLIC RESOLVER & PREVIEW)
 // -----------------------------------------------------------------------------
@@ -588,7 +624,14 @@ router.get('/pages/:slug', async (req: Request, res: Response) => {
       }
     });
 
-    if (!page || page.status !== 'PUBLISHED') {
+    if (!page || page.status !== 'PUBLISHED' || page.deletedAt) {
+      // Log 404 access
+      prisma.notFoundLog.upsert({
+        where: { path: `/${slug}` },
+        update: { count: { increment: 1 }, lastSeen: new Date() },
+        create: { path: `/${slug}`, referrer: (req.headers.referer as string) || null }
+      }).catch(() => {});
+
       return res.status(404).json({ success: false, error: { message: 'Page not found or unpublished' } });
     }
 

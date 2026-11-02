@@ -618,6 +618,7 @@ model Page {
   slug             String         @unique
   pageType         String         @default("STANDARD") // STANDARD, LANDING_PAGE, SERVICE, INDUSTRY, LOCATION, CASE_STUDY, CUSTOM
   status           String         @default("DRAFT")    // DRAFT, PUBLISHED, ARCHIVED
+  editorialStatus  String         @default("IN_PROGRESS") // IN_PROGRESS, READY_FOR_REVIEW, APPROVED
   template         String         @default("DEFAULT")  // DEFAULT, MINIMAL, FULL_WIDTH, BLANK
   excerpt          String?
   featuredImageId  String?
@@ -639,6 +640,15 @@ model Page {
   schemaType       String         @default("WebPage") // WebPage, Service, Article, FAQPage, AboutPage, ContactPage
   breadcrumbLabel  String?
   
+  // Scheduling & Soft Delete
+  publishAt        DateTime?
+  unpublishAt      DateTime?
+  deletedAt        DateTime?
+  
+  // Concurrency & Comments
+  version          Int            @default(1)
+  comments         PageComment[]
+  
   // Relations & Tracking
   blocks           PageBlock[]
   revisions        PageRevision[]
@@ -651,23 +661,101 @@ model Page {
   @@index([slug])
   @@index([status])
   @@index([pageType])
+  @@index([deletedAt])
+  @@index([publishAt])
 }
 
 model PageBlock {
+  id              String       @id @default(uuid())
+  pageId          String
+  page            Page         @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  globalBlockId   String?
+  globalBlock     GlobalBlock? @relation(fields: [globalBlockId], references: [id], onDelete: SetNull)
+  type            String       // HERO, RICH_TEXT, TEXT_IMAGE, IMAGE_TEXT, FULL_IMAGE, IMAGE_GALLERY, VIDEO, CTA, FEATURE_GRID, CARD_GRID, SERVICE_GRID, PROJECT_GRID, TESTIMONIALS, FAQ, PROCESS, STATS, LOGO_CLOUD, QUOTE, TWO_COLUMN, THREE_COLUMN, FOUR_COLUMN, SPACER, DIVIDER, CONTACT_FORM, LEAD_FORM, CUSTOM_CONTENT, TEAM, PRICING, BLOG_FEED, TIMELINE, BREADCRUMB, TABLE, ACCORDION, EMBED
+  variant         String       @default("default")
+  sortOrder       Int          @default(0)
+  isVisible       Boolean      @default(true)
+  settings        String       @default("{}") // JSON string: width, padding, background, alignment, mobileStack, typography, responsive
+  content         String       @default("{}") // JSON string: headings, bodyHtml, buttons, cards, images, items, forms
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([pageId])
+  @@index([sortOrder])
+  @@index([globalBlockId])
+}
+
+model GlobalBlock {
+  id          String      @id @default(uuid())
+  name        String
+  category    String      @default("GENERAL") // CTA, CONTACT, TRUST, NEWSLETTER, FOOTER, HEADER
+  description String?
+  type        String      // Block type e.g. CTA, FAQ, STATS
+  settings    String      @default("{}")
+  content     String      @default("{}")
+  blocks      PageBlock[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([name])
+  @@index([category])
+}
+
+model PageTemplate {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  category    String   @default("STANDARD") // LANDING, SERVICE, INDUSTRY, LOCATION, CAMPAIGN
+  previewImage String?
+  blocksJson  String   // JSON snapshot of template blocks
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([name])
+}
+
+model PageComment {
   id        String   @id @default(uuid())
   pageId    String
   page      Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
-  type      String   // HERO, RICH_TEXT, TEXT_IMAGE, IMAGE_TEXT, FULL_IMAGE, IMAGE_GALLERY, VIDEO, CTA, FEATURE_GRID, CARD_GRID, SERVICE_GRID, PROJECT_GRID, TESTIMONIALS, FAQ, PROCESS, STATS, LOGO_CLOUD, QUOTE, TWO_COLUMN, THREE_COLUMN, FOUR_COLUMN, SPACER, DIVIDER, CONTACT_FORM, LEAD_FORM, CUSTOM_CONTENT
-  variant   String   @default("default")
-  sortOrder Int      @default(0)
-  isVisible Boolean  @default(true)
-  settings  String   @default("{}") // JSON string: width, padding, background, alignment, mobileStack, etc.
-  content   String   @default("{}") // JSON string: headings, bodyHtml, buttons, cards, images, items
+  author    String
+  text      String
+  isResolved Boolean @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([pageId])
-  @@index([sortOrder])
+}
+
+model NotFoundLog {
+  id        String   @id @default(uuid())
+  path      String   @unique
+  count     Int      @default(1)
+  referrer  String?
+  firstSeen DateTime @default(now())
+  lastSeen  DateTime @updatedAt
+  isIgnored Boolean  @default(false)
+
+  @@index([path])
+  @@index([count])
+  @@index([lastSeen])
+}
+
+model FormSubmissionRecord {
+  id          String   @id @default(uuid())
+  formName    String   // Contact Form, Lead Form, Audit Form, Custom Form
+  pageSlug    String?
+  data        String   // JSON string of submitted fields
+  status      String   @default("NEW") // NEW, CONTACTED, QUALIFIED, CLOSED, SPAM
+  notes       String?
+  clientIp    String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([formName])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model PageRevision {

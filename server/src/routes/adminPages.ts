@@ -934,7 +934,260 @@ router.delete('/redirects/:id', requireRole(['SUPER_ADMIN', 'ADMIN']), async (re
 });
 
 // -----------------------------------------------------------------------------
-// 5. PREVIEW TOKEN GENERATOR
+// 5. GLOBAL BLOCKS, TEMPLATES, COMMENTS, 404 LOGS & SUBMISSIONS
+// -----------------------------------------------------------------------------
+
+// GET /api/admin/global-blocks
+router.get('/global-blocks', requireRole(['SUPER_ADMIN', 'ADMIN', 'EDITOR']), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const blocks = await prisma.globalBlock.findMany({
+      orderBy: { updatedAt: 'desc' },
+      include: { _count: { select: { blocks: true } } }
+    });
+    return res.json({ success: true, data: blocks });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// POST /api/admin/global-blocks
+router.post('/global-blocks', requireRole(['SUPER_ADMIN', 'ADMIN']), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { name, category = 'GENERAL', description, type, settings, content } = req.body;
+    if (!name || !type) {
+      return res.status(400).json({ success: false, error: { message: 'Name and type are required' } });
+    }
+
+    const block = await prisma.globalBlock.create({
+      data: {
+        name,
+        category,
+        description,
+        type,
+        settings: typeof settings === 'string' ? settings : JSON.stringify(settings || {}),
+        content: typeof content === 'string' ? content : JSON.stringify(content || {})
+      }
+    });
+
+    return res.status(201).json({ success: true, data: block });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// PUT /api/admin/global-blocks/:id
+router.put('/global-blocks/:id', requireRole(['SUPER_ADMIN', 'ADMIN']), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const id = req.params.id as string;
+    const { name, category, description, settings, content } = req.body;
+
+    const updated = await prisma.globalBlock.update({
+      where: { id },
+      data: {
+        name,
+        category,
+        description,
+        settings: settings !== undefined ? (typeof settings === 'string' ? settings : JSON.stringify(settings)) : undefined,
+        content: content !== undefined ? (typeof content === 'string' ? content : JSON.stringify(content)) : undefined
+      }
+    });
+
+    // Update all linked page blocks
+    if (settings !== undefined || content !== undefined) {
+      await prisma.pageBlock.updateMany({
+        where: { globalBlockId: id },
+        data: {
+          settings: updated.settings,
+          content: updated.content
+        }
+      });
+    }
+
+    return res.json({ success: true, data: updated });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// DELETE /api/admin/global-blocks/:id
+router.delete('/global-blocks/:id', requireRole(['SUPER_ADMIN', 'ADMIN']), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const id = req.params.id as string;
+    await prisma.globalBlock.delete({ where: { id } });
+    return res.json({ success: true, message: 'Global block deleted' });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// GET /api/admin/templates
+router.get('/templates', requireRole(['SUPER_ADMIN', 'ADMIN', 'EDITOR']), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const templates = await prisma.pageTemplate.findMany({ orderBy: { createdAt: 'desc' } });
+    return res.json({ success: true, data: templates });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// POST /api/admin/templates (Save current page as template)
+router.post('/templates', requireRole(['SUPER_ADMIN', 'ADMIN']), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { name, description, category = 'STANDARD', previewImage, pageId } = req.body;
+    if (!name || !pageId) {
+      return res.status(400).json({ success: false, error: { message: 'name and pageId required' } });
+    }
+
+    const page = await prisma.page.findUnique({
+      where: { id: pageId },
+      include: { blocks: { orderBy: { sortOrder: 'asc' } } }
+    });
+
+    if (!page) {
+      return res.status(404).json({ success: false, error: { message: 'Page not found' } });
+    }
+
+    const template = await prisma.pageTemplate.create({
+      data: {
+        name,
+        description,
+        category,
+        previewImage: previewImage || page.featuredImageUrl || null,
+        blocksJson: JSON.stringify(page.blocks)
+      }
+    });
+
+    return res.status(201).json({ success: true, data: template });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// GET /api/admin/404-logs
+router.get('/404-logs', requireRole(['SUPER_ADMIN', 'ADMIN']), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const logs = await prisma.notFoundLog.findMany({
+      orderBy: { count: 'desc' },
+      take: 100
+    });
+    return res.json({ success: true, data: logs });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// GET /api/admin/form-submissions
+router.get('/form-submissions', requireRole(['SUPER_ADMIN', 'ADMIN', 'EDITOR']), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { formName, status } = req.query;
+    const where: any = {};
+    if (formName && typeof formName === 'string') where.formName = formName;
+    if (status && typeof status === 'string') where.status = status;
+
+    const submissions = await prisma.formSubmissionRecord.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: 150
+    });
+    return res.json({ success: true, data: submissions });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// PUT /api/admin/form-submissions/:id
+router.put('/form-submissions/:id', requireRole(['SUPER_ADMIN', 'ADMIN']), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const id = req.params.id as string;
+    const { status, notes } = req.body;
+    const updated = await prisma.formSubmissionRecord.update({
+      where: { id },
+      data: {
+        status: status !== undefined ? status : undefined,
+        notes: notes !== undefined ? notes : undefined
+      }
+    });
+    return res.json({ success: true, data: updated });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// GET /api/admin/search-content - Global content search
+router.get('/search-content', requireRole(['SUPER_ADMIN', 'ADMIN', 'EDITOR']), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const q = ((req.query.q as string) || '').trim();
+    if (!q) return res.json({ success: true, data: { pages: [], services: [], projects: [] } });
+
+    const [pages, services, projects] = await Promise.all([
+      prisma.page.findMany({
+        where: {
+          OR: [
+            { title: { contains: q, mode: 'insensitive' } },
+            { slug: { contains: q, mode: 'insensitive' } }
+          ],
+          deletedAt: null
+        },
+        take: 10,
+        select: { id: true, title: true, slug: true, status: true }
+      }),
+      prisma.service.findMany({
+        where: {
+          OR: [
+            { title: { contains: q, mode: 'insensitive' } },
+            { slug: { contains: q, mode: 'insensitive' } }
+          ]
+        },
+        take: 10,
+        select: { id: true, title: true, slug: true }
+      }),
+      prisma.project.findMany({
+        where: {
+          OR: [
+            { title: { contains: q, mode: 'insensitive' } },
+            { slug: { contains: q, mode: 'insensitive' } }
+          ]
+        },
+        take: 10,
+        select: { id: true, title: true, slug: true }
+      })
+    ]);
+
+    return res.json({
+      success: true,
+      data: { pages, services, projects }
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// GET /api/admin/media-audit - Image audit for missing alts & large images
+router.get('/media-audit', requireRole(['SUPER_ADMIN', 'ADMIN']), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const items = await prisma.mediaItem.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 100
+    });
+
+    const issues: any[] = [];
+    for (const item of items) {
+      if (!item.altText || !item.altText.trim()) {
+        issues.push({ id: item.id, url: item.url, filename: item.filename, type: 'MISSING_ALT', message: 'Missing accessible alt description' });
+      }
+      if (item.size && item.size > 2 * 1024 * 1024) {
+        issues.push({ id: item.id, url: item.url, filename: item.filename, type: 'OVERSIZED', message: `Oversized image file (${(item.size / 1024 / 1024).toFixed(1)} MB)` });
+      }
+    }
+
+    return res.json({ success: true, data: { totalMedia: items.length, issuesCount: issues.length, issues } });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// -----------------------------------------------------------------------------
+// 6. PREVIEW TOKEN GENERATOR
 // -----------------------------------------------------------------------------
 
 export function generatePreviewToken(pageId: string): string {

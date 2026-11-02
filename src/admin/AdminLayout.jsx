@@ -17,6 +17,9 @@ import SettingsCMS from './SettingsCMS';
 import PagesCMS from './PagesCMS';
 import PageBuilderCMS from './PageBuilderCMS';
 import RedirectsCMS from './RedirectsCMS';
+import GlobalBlocksCMS from './GlobalBlocksCMS';
+import NotFoundManagerCMS from './NotFoundManagerCMS';
+import FormSubmissionsCMS from './FormSubmissionsCMS';
 
 export default function AdminLayout({ user, onLogout, onViewPublicSite }) {
   const [activeTab, setActiveTab] = useState('pages');
@@ -25,12 +28,15 @@ export default function AdminLayout({ user, onLogout, onViewPublicSite }) {
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'pages', label: 'Pages & Landing Pages', icon: FileText },
+    { id: 'global-blocks', label: 'Reusable Global Blocks', icon: Layers },
+    { id: 'form-submissions', label: 'Form Inquiries', icon: Inbox },
     { id: 'redirects', label: '301 / 302 Redirects', icon: CornerDownRight },
+    { id: '404-monitor', label: '404 Error Monitor', icon: CornerDownRight },
     { id: 'homepage', label: 'Homepage Sections', icon: Layers },
     { id: 'services', label: 'Services CMS', icon: Layers },
     { id: 'projects', label: 'Projects & Work', icon: Briefcase },
     { id: 'media', label: 'Media Library', icon: ImageIcon },
-    { id: 'leads', label: 'Leads & Enquiries', icon: Inbox },
+    { id: 'leads', label: 'Core Leads', icon: Inbox },
     { id: 'settings', label: 'Global Settings', icon: Settings },
   ];
 
@@ -151,7 +157,10 @@ export default function AdminLayout({ user, onLogout, onViewPublicSite }) {
           <>
             {activeTab === 'dashboard' && <DashboardView onNavigate={(tab) => setActiveTab(tab)} />}
             {activeTab === 'pages' && <PagesCMS onEditPage={(id) => setEditingPageId(id)} />}
+            {activeTab === 'global-blocks' && <GlobalBlocksCMS />}
+            {activeTab === 'form-submissions' && <FormSubmissionsCMS />}
             {activeTab === 'redirects' && <RedirectsCMS />}
+            {activeTab === '404-monitor' && <NotFoundManagerCMS />}
             {activeTab === 'homepage' && <HomepageCMS />}
             {activeTab === 'services' && <ServicesCMS />}
             {activeTab === 'projects' && <ProjectsCMS />}
