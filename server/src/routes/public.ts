@@ -89,6 +89,20 @@ router.get('/sitemap.xml', async (req: Request, res: Response) => {
       xml += `  <url><loc>${baseUrl}/blog/${item.slug}</loc><lastmod>${item.updatedAt.toISOString()}</lastmod><priority>0.7</priority></url>\n`;
     }
 
+    // Dynamic Pages (Only published and indexable)
+    const dynamicPages = await prisma.page.findMany({
+      where: {
+        status: 'PUBLISHED',
+        isIndexable: true,
+        noIndex: false
+      },
+      select: { slug: true, updatedAt: true }
+    });
+
+    for (const page of dynamicPages) {
+      xml += `  <url><loc>${baseUrl}/${page.slug}</loc><lastmod>${page.updatedAt.toISOString()}</lastmod><priority>0.8</priority></url>\n`;
+    }
+
     xml += `</urlset>`;
 
     res.header('Content-Type', 'application/xml');
@@ -498,6 +512,68 @@ router.post('/newsletter', formRateLimiter(), async (req: Request, res: Response
     });
 
     return res.json({ success: true, data: sub });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// -----------------------------------------------------------------------------
+// DYNAMIC PAGES (PUBLIC RESOLVER & PREVIEW)
+// -----------------------------------------------------------------------------
+
+// GET /api/pages/preview/:id?token=... - Preview unpublished drafts securely
+router.get('/pages/preview/:id', async (req: Request, res: Response) => {
+  try {
+    const id = req.params.id as string;
+    const token = req.query.token as string | undefined;
+
+    if (!token || typeof token !== 'string') {
+      return res.status(401).json({ success: false, error: { message: 'Preview token required' } });
+    }
+
+    const { verifyPreviewToken } = await import('./adminPages.js');
+    if (!verifyPreviewToken(id, token)) {
+      return res.status(403).json({ success: false, error: { message: 'Invalid or expired preview token' } });
+    }
+
+    const page = await prisma.page.findUnique({
+      where: { id },
+      include: {
+        blocks: {
+          orderBy: { sortOrder: 'asc' }
+        }
+      }
+    });
+
+    if (!page) {
+      return res.status(404).json({ success: false, error: { message: 'Page not found' } });
+    }
+
+    return res.json({ success: true, data: page, isPreview: true });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// GET /api/pages/:slug - Fetch published page with visible blocks
+router.get('/pages/:slug', async (req: Request, res: Response) => {
+  try {
+    const slug = req.params.slug as string;
+    const page = await prisma.page.findUnique({
+      where: { slug },
+      include: {
+        blocks: {
+          where: { isVisible: true },
+          orderBy: { sortOrder: 'asc' }
+        }
+      }
+    });
+
+    if (!page || page.status !== 'PUBLISHED') {
+      return res.status(404).json({ success: false, error: { message: 'Page not found or unpublished' } });
+    }
+
+    return res.json({ success: true, data: page });
   } catch (err: any) {
     return res.status(500).json({ success: false, error: { message: err.message } });
   }

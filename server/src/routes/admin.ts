@@ -12,9 +12,13 @@ import { loginRateLimiter } from '../middleware/rateLimiter.js';
 import { getStorageProvider, validateUpload } from '../utils/storage.js';
 import multer from 'multer';
 import crypto from 'crypto';
+import adminPagesRouter from './adminPages.js';
 
 const router = Router();
 const uploadMemory = multer({ storage: multer.memoryStorage(), limits: { fileSize: 15 * 1024 * 1024 } });
+
+// Mount page builder & redirects routes
+router.use('/', adminPagesRouter);
 
 // Audit log helper
 async function logAudit(userId: string | undefined, action: string, entityType: string, entityId?: string, metadata?: any) {

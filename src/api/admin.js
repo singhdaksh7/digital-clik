@@ -245,3 +245,120 @@ export async function updateAnnouncementBar(data) {
 export async function getAuditLogs() {
   return await fetchApi('/admin/audit-logs');
 }
+
+// -----------------------------------------------------------------------------
+// DYNAMIC PAGE BUILDER & REDIRECTS API
+// -----------------------------------------------------------------------------
+
+export async function getPages(params = {}) {
+  const query = new URLSearchParams(params).toString();
+  return await fetchApi(`/admin/pages${query ? `?${query}` : ''}`);
+}
+
+export async function getPage(id) {
+  return await fetchApi(`/admin/pages/${id}`);
+}
+
+export async function createPage(data) {
+  return await fetchApi('/admin/pages', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  });
+}
+
+export async function updatePage(id, data) {
+  return await fetchApi(`/admin/pages/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data)
+  });
+}
+
+export async function publishPage(id, status = 'PUBLISHED') {
+  return await fetchApi(`/admin/pages/${id}/publish`, {
+    method: 'POST',
+    body: JSON.stringify({ status })
+  });
+}
+
+export async function duplicatePage(id) {
+  return await fetchApi(`/admin/pages/${id}/duplicate`, {
+    method: 'POST'
+  });
+}
+
+export async function deletePage(id) {
+  return await fetchApi(`/admin/pages/${id}`, {
+    method: 'DELETE'
+  });
+}
+
+export async function addBlock(pageId, data) {
+  return await fetchApi(`/admin/pages/${pageId}/blocks`, {
+    method: 'POST',
+    body: JSON.stringify(data)
+  });
+}
+
+export async function updateBlock(id, data) {
+  return await fetchApi(`/admin/blocks/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data)
+  });
+}
+
+export async function reorderBlocks(pageId, blockIds) {
+  return await fetchApi(`/admin/pages/${pageId}/reorder`, {
+    method: 'POST',
+    body: JSON.stringify({ blockIds })
+  });
+}
+
+export async function duplicateBlock(id) {
+  return await fetchApi(`/admin/blocks/${id}/duplicate`, {
+    method: 'POST'
+  });
+}
+
+export async function deleteBlock(id) {
+  return await fetchApi(`/admin/blocks/${id}`, {
+    method: 'DELETE'
+  });
+}
+
+export async function getPageRevisions(pageId) {
+  return await fetchApi(`/admin/pages/${pageId}/revisions`);
+}
+
+export async function restorePageRevision(pageId, revisionId) {
+  return await fetchApi(`/admin/pages/${pageId}/revisions/${revisionId}/restore`, {
+    method: 'POST'
+  });
+}
+
+export async function getPagePreviewToken(pageId) {
+  return await fetchApi(`/admin/pages/${pageId}/preview-token`);
+}
+
+export async function getRedirects() {
+  return await fetchApi('/admin/redirects');
+}
+
+export async function createRedirect(data) {
+  return await fetchApi('/admin/redirects', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  });
+}
+
+export async function updateRedirect(id, data) {
+  return await fetchApi(`/admin/redirects/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data)
+  });
+}
+
+export async function deleteRedirect(id) {
+  return await fetchApi(`/admin/redirects/${id}`, {
+    method: 'DELETE'
+  });
+}

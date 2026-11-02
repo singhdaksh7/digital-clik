@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { 
-  LayoutDashboard, Layers, Briefcase, Building2, 
-  Quote, Sliders, Image as ImageIcon, Inbox, Settings, 
-  ShieldCheck, LogOut, ExternalLink, MousePointer, Sparkles 
+  LayoutDashboard, Layers, Briefcase, 
+  Image as ImageIcon, Inbox, Settings, 
+  LogOut, ExternalLink, MousePointer,
+  FileText, CornerDownRight
 } from 'lucide-react';
 import { adminLogout } from '../api/admin';
 
@@ -13,13 +14,19 @@ import ProjectsCMS from './ProjectsCMS';
 import MediaLibraryCMS from './MediaLibraryCMS';
 import LeadsCMS from './LeadsCMS';
 import SettingsCMS from './SettingsCMS';
+import PagesCMS from './PagesCMS';
+import PageBuilderCMS from './PageBuilderCMS';
+import RedirectsCMS from './RedirectsCMS';
 
 export default function AdminLayout({ user, onLogout, onViewPublicSite }) {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('pages');
+  const [editingPageId, setEditingPageId] = useState(null);
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'homepage', label: 'Homepage Sections', icon: Sliders },
+    { id: 'pages', label: 'Pages & Landing Pages', icon: FileText },
+    { id: 'redirects', label: '301 / 302 Redirects', icon: CornerDownRight },
+    { id: 'homepage', label: 'Homepage Sections', icon: Layers },
     { id: 'services', label: 'Services CMS', icon: Layers },
     { id: 'projects', label: 'Projects & Work', icon: Briefcase },
     { id: 'media', label: 'Media Library', icon: ImageIcon },
@@ -134,14 +141,25 @@ export default function AdminLayout({ user, onLogout, onViewPublicSite }) {
       </aside>
 
       {/* Main Content Area */}
-      <main style={{ marginLeft: '260px', flex: 1, padding: '2.5rem 3rem' }}>
-        {activeTab === 'dashboard' && <DashboardView onNavigate={(tab) => setActiveTab(tab)} />}
-        {activeTab === 'homepage' && <HomepageCMS />}
-        {activeTab === 'services' && <ServicesCMS />}
-        {activeTab === 'projects' && <ProjectsCMS />}
-        {activeTab === 'media' && <MediaLibraryCMS />}
-        {activeTab === 'leads' && <LeadsCMS />}
-        {activeTab === 'settings' && <SettingsCMS />}
+      <main style={{ marginLeft: '260px', flex: 1, padding: editingPageId ? 0 : '2.5rem 3rem' }}>
+        {editingPageId ? (
+          <PageBuilderCMS
+            pageId={editingPageId}
+            onBack={() => setEditingPageId(null)}
+          />
+        ) : (
+          <>
+            {activeTab === 'dashboard' && <DashboardView onNavigate={(tab) => setActiveTab(tab)} />}
+            {activeTab === 'pages' && <PagesCMS onEditPage={(id) => setEditingPageId(id)} />}
+            {activeTab === 'redirects' && <RedirectsCMS />}
+            {activeTab === 'homepage' && <HomepageCMS />}
+            {activeTab === 'services' && <ServicesCMS />}
+            {activeTab === 'projects' && <ProjectsCMS />}
+            {activeTab === 'media' && <MediaLibraryCMS />}
+            {activeTab === 'leads' && <LeadsCMS />}
+            {activeTab === 'settings' && <SettingsCMS />}
+          </>
+        )}
       </main>
 
     </div>

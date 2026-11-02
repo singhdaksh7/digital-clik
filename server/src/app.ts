@@ -6,6 +6,7 @@ import dotenv from 'dotenv';
 import publicRoutes from './routes/public.js';
 import adminRoutes from './routes/admin.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import { redirectsMiddleware } from './middleware/redirects.js';
 
 dotenv.config();
 
@@ -26,6 +27,9 @@ app.use(cors({
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// 301/302 Redirects Middleware
+app.use(redirectsMiddleware);
 
 // Serve static uploads
 const uploadDir = path.resolve(process.env.UPLOAD_DIR || 'uploads');

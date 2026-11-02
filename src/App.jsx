@@ -23,10 +23,37 @@ import { getAdminMe } from './api/admin';
 import ServiceView from './components/Views/ServiceView';
 import CaseStudiesView from './components/Views/CaseStudiesView';
 import ContactView from './components/Views/ContactView';
+import DynamicPageView from './components/Views/DynamicPageView';
 
 export default function App() {
   const [activePage, setActivePage] = useState(() => {
-    return window.location.pathname.startsWith('/admin') ? 'admin' : 'home';
+    const path = window.location.pathname;
+    if (path.startsWith('/admin')) return 'admin';
+    if (path.startsWith('/preview/page/')) return 'preview';
+    if (path === '/' || path === '') return 'home';
+    if (path === '/services') return 'services';
+    if (path === '/case-studies') return 'case-studies';
+    if (path === '/industries') return 'industries';
+    if (path === '/contact') return 'contact';
+    return 'dynamic';
+  });
+
+  const [dynamicSlug, setDynamicSlug] = useState(() => {
+    const path = window.location.pathname;
+    if (path.startsWith('/preview/page/')) return '';
+    return path.replace(/^\//, '');
+  });
+
+  const [previewData, setPreviewData] = useState(() => {
+    const path = window.location.pathname;
+    if (path.startsWith('/preview/page/')) {
+      const parts = path.split('/');
+      const pageId = parts[3];
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get('token') || '';
+      return { pageId, token };
+    }
+    return { pageId: null, token: null };
   });
   const [adminUser, setAdminUser] = useState(null);
   const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
@@ -164,6 +191,18 @@ export default function App() {
 
         {activePage === 'contact' && (
           <ContactView onOpenAuditModal={openAuditModal} />
+        )}
+
+        {activePage === 'dynamic' && (
+          <DynamicPageView slug={dynamicSlug} onOpenAuditModal={openAuditModal} />
+        )}
+
+        {activePage === 'preview' && (
+          <DynamicPageView
+            previewId={previewData.pageId}
+            previewToken={previewData.token}
+            onOpenAuditModal={openAuditModal}
+          />
         )}
       </main>
 

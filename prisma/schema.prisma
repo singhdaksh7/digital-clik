@@ -160,6 +160,7 @@ model NavigationItem {
   sortOrder        Int             @default(0)
   isVisible        Boolean         @default(true)
   openInNewTab     Boolean         @default(false)
+  linkedPageId     String?
   linkedServiceId  String?
   linkedIndustryId String?
   createdAt        DateTime        @default(now())
@@ -608,36 +609,89 @@ model MediaItem {
 }
 
 // -----------------------------------------------------------------------------
-// STATIC PAGES & MODULAR PAGE BUILDER
+// DYNAMIC PAGE BUILDER, REVISIONS & REDIRECTS
 // -----------------------------------------------------------------------------
 
 model Page {
-  id              String        @id @default(uuid())
-  title           String
-  slug            String        @unique
-  pageType        String        @default("STATIC") // STATIC, LANDING
-  status          String        @default("PUBLISHED")
-  metaTitle       String?
-  metaDescription String?
-  sections        PageSection[]
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  id               String         @id @default(uuid())
+  title            String
+  slug             String         @unique
+  pageType         String         @default("STANDARD") // STANDARD, LANDING_PAGE, SERVICE, INDUSTRY, LOCATION, CASE_STUDY, CUSTOM
+  status           String         @default("DRAFT")    // DRAFT, PUBLISHED, ARCHIVED
+  template         String         @default("DEFAULT")  // DEFAULT, MINIMAL, FULL_WIDTH, BLANK
+  excerpt          String?
+  featuredImageId  String?
+  featuredImageUrl String?
+  
+  // SEO & Metadata Controls
+  metaTitle        String?
+  metaDescription  String?
+  canonicalUrl     String?
+  isIndexable      Boolean        @default(true)
+  noFollow         Boolean        @default(false)
+  noIndex          Boolean        @default(false)
+  ogTitle          String?
+  ogDescription    String?
+  ogImage          String?
+  twitterTitle     String?
+  twitterDescription String?
+  twitterImage     String?
+  schemaType       String         @default("WebPage") // WebPage, Service, Article, FAQPage, AboutPage, ContactPage
+  breadcrumbLabel  String?
+  
+  // Relations & Tracking
+  blocks           PageBlock[]
+  revisions        PageRevision[]
+  createdBy        String?
+  updatedBy        String?
+  publishedAt      DateTime?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
 
   @@index([slug])
+  @@index([status])
+  @@index([pageType])
 }
 
-model PageSection {
+model PageBlock {
   id        String   @id @default(uuid())
   pageId    String
   page      Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
-  type      String   // HERO, TEXT, IMAGE_TEXT, STATS, SERVICES, PROJECTS, TESTIMONIAL, FAQ, CTA
-  title     String?
-  content   String?  // JSON string
+  type      String   // HERO, RICH_TEXT, TEXT_IMAGE, IMAGE_TEXT, FULL_IMAGE, IMAGE_GALLERY, VIDEO, CTA, FEATURE_GRID, CARD_GRID, SERVICE_GRID, PROJECT_GRID, TESTIMONIALS, FAQ, PROCESS, STATS, LOGO_CLOUD, QUOTE, TWO_COLUMN, THREE_COLUMN, FOUR_COLUMN, SPACER, DIVIDER, CONTACT_FORM, LEAD_FORM, CUSTOM_CONTENT
+  variant   String   @default("default")
   sortOrder Int      @default(0)
   isVisible Boolean  @default(true)
+  settings  String   @default("{}") // JSON string: width, padding, background, alignment, mobileStack, etc.
+  content   String   @default("{}") // JSON string: headings, bodyHtml, buttons, cards, images, items
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([pageId])
   @@index([sortOrder])
+}
+
+model PageRevision {
+  id        String   @id @default(uuid())
+  pageId    String
+  page      Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  snapshot  String   // JSON string containing full Page + Blocks state
+  author    String?
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@index([pageId])
+  @@index([createdAt])
+}
+
+model Redirect {
+  id         String   @id @default(uuid())
+  sourcePath String   @unique // e.g. "/old-slug" or "/website-dev"
+  targetPath String   // e.g. "/new-slug" or "https://..."
+  statusCode Int      @default(301) // 301 (Permanent) or 302 (Temporary)
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([sourcePath])
+  @@index([isActive])
 }
