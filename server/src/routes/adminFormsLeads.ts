@@ -291,7 +291,12 @@ router.get('/leads/unified', requireRole(['SUPER_ADMIN', 'ADMIN', 'EDITOR']), as
 
     for (const f of formSubs) {
       let parsedData: any = {};
-      try { parsedData = JSON.parse(f.data); } catch {}
+      try { 
+        parsedData = JSON.parse(f.data); 
+        if (parsedData.fields && typeof parsedData.fields === 'object') {
+          parsedData = { ...parsedData.fields, ...parsedData };
+        }
+      } catch {}
       unified.push({
         id: f.id,
         leadType: 'CUSTOM_FORM',
