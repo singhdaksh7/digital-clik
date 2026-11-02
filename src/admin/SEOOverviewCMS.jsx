@@ -308,7 +308,9 @@ export default function SEOOverviewCMS({ onNavigate }) {
               <p className="mt-0.5">Scans internal anchor tags across Page Blocks, identifying orphan pages and outgoing dead ends.</p>
             </div>
             <div className="text-right">
-              <span className="text-white font-bold">{linkGraph?.pages?.length || 0}</span> pages analyzed
+              <span className="text-white font-bold">
+                {Array.isArray(linkGraph) ? linkGraph.length : (linkGraph?.pages?.length || 0)}
+              </span> pages analyzed
             </div>
           </div>
 
@@ -325,9 +327,12 @@ export default function SEOOverviewCMS({ onNavigate }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-800/70">
-                {linkGraph?.pages?.map((p, idx) => {
-                  const isOrphan = p.inboundCount === 0 && p.slug !== '';
-                  const hasBroken = p.brokenOutbound?.length > 0;
+                {(Array.isArray(linkGraph) ? linkGraph : (linkGraph?.pages || [])).map((p, idx) => {
+                  const inboundCount = p.incomingLinksCount ?? p.inboundCount ?? 0;
+                  const outboundCount = p.outgoingLinksCount ?? p.outboundCount ?? 0;
+                  const brokenLinks = p.brokenLinks || p.brokenOutbound || [];
+                  const isOrphan = inboundCount === 0 && p.slug !== '';
+                  const hasBroken = brokenLinks.length > 0;
 
                   return (
                     <tr key={idx} className="hover:bg-neutral-800/40">
@@ -337,14 +342,14 @@ export default function SEOOverviewCMS({ onNavigate }) {
                       <td className="p-3 text-white font-medium">{p.title}</td>
                       <td className="p-3 text-center">
                         <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${isOrphan ? 'bg-amber-500/20 text-amber-300' : 'bg-neutral-800 text-neutral-300'}`}>
-                          {p.inboundCount}
+                          {inboundCount}
                         </span>
                       </td>
-                      <td className="p-3 text-center text-neutral-400">{p.outboundCount}</td>
+                      <td className="p-3 text-center text-neutral-400">{outboundCount}</td>
                       <td className="p-3 text-center">
                         {hasBroken ? (
                           <span className="px-2 py-0.5 bg-red-500/20 text-red-300 rounded font-bold text-[11px]">
-                            {p.brokenOutbound.length} broken
+                            {brokenLinks.length} broken
                           </span>
                         ) : (
                           <span className="text-neutral-500">0</span>

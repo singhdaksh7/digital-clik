@@ -25,7 +25,7 @@ export default function SearchPage() {
 
     setLoading(true);
     try {
-      const res = await fetch(`/api/public/search?q=${encodeURIComponent(searchTerm.trim())}`);
+      const res = await fetch(`/api/search?q=${encodeURIComponent(searchTerm.trim())}`);
       const json = await res.json();
       if (json.success) {
         setResults(json.data || []);

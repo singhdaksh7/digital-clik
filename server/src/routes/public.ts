@@ -410,7 +410,7 @@ router.get('/blog-tags', async (req: Request, res: Response) => {
   }
 });
 
-router.get('/search', async (req: Request, res: Response) => {
+router.get(['/search', '/public/search'], async (req: Request, res: Response) => {
   try {
     const q = ((req.query.q as string) || '').trim();
     if (!q || q.length < 2) {
@@ -699,7 +699,7 @@ router.post('/newsletter', formRateLimiter(), async (req: Request, res: Response
 });
 
 // POST /api/forms/submit - Dynamic custom form submission & UTM attribution
-router.post('/forms/submit', formRateLimiter(), async (req: Request, res: Response) => {
+router.post(['/forms/submit', '/public/forms/submit'], formRateLimiter(), async (req: Request, res: Response) => {
   try {
     const {
       formId,
