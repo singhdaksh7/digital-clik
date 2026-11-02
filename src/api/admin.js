@@ -362,3 +362,172 @@ export async function deleteRedirect(id) {
     method: 'DELETE'
   });
 }
+
+// -----------------------------------------------------------------------------
+// CMS PRO: BLOG, AUTHORS, TAGS, WEBHOOKS, EMAIL, SEO, SYSTEM HEALTH
+// -----------------------------------------------------------------------------
+
+export async function getBlogPosts() {
+  return await fetchApi('/admin/blog');
+}
+
+export async function createBlogPost(data) {
+  return await fetchApi('/admin/blog', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  });
+}
+
+export async function updateBlogPost(id, data) {
+  return await fetchApi(`/admin/blog/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data)
+  });
+}
+
+export async function deleteBlogPost(id) {
+  return await fetchApi(`/admin/blog/${id}`, {
+    method: 'DELETE'
+  });
+}
+
+export async function getAuthors() {
+  return await fetchApi('/admin/authors');
+}
+
+export async function createAuthor(data) {
+  return await fetchApi('/admin/authors', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  });
+}
+
+export async function updateAuthor(id, data) {
+  return await fetchApi(`/admin/authors/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data)
+  });
+}
+
+export async function deleteAuthor(id) {
+  return await fetchApi(`/admin/authors/${id}`, {
+    method: 'DELETE'
+  });
+}
+
+export async function getBlogCategories() {
+  return await fetchApi('/admin/blog/categories');
+}
+
+export async function createBlogCategory(data) {
+  return await fetchApi('/admin/blog/categories', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  });
+}
+
+export async function updateBlogCategory(id, data) {
+  return await fetchApi(`/admin/blog/categories/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data)
+  });
+}
+
+export async function deleteBlogCategory(id) {
+  return await fetchApi(`/admin/blog/categories/${id}`, {
+    method: 'DELETE'
+  });
+}
+
+export async function getBlogTags() {
+  return await fetchApi('/admin/blog/tags');
+}
+
+export async function createBlogTag(data) {
+  return await fetchApi('/admin/blog/tags', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  });
+}
+
+export async function updateBlogTag(id, data) {
+  return await fetchApi(`/admin/blog/tags/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data)
+  });
+}
+
+export async function deleteBlogTag(id) {
+  return await fetchApi(`/admin/blog/tags/${id}`, {
+    method: 'DELETE'
+  });
+}
+
+export async function getWebhooks() {
+  return await fetchApi('/admin/webhooks');
+}
+
+export async function createWebhook(data) {
+  return await fetchApi('/admin/webhooks', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  });
+}
+
+export async function updateWebhook(id, data) {
+  return await fetchApi(`/admin/webhooks/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data)
+  });
+}
+
+export async function deleteWebhook(id) {
+  return await fetchApi(`/admin/webhooks/${id}`, {
+    method: 'DELETE'
+  });
+}
+
+export async function testWebhook(id) {
+  return await fetchApi(`/admin/webhooks/${id}/test`, {
+    method: 'POST'
+  });
+}
+
+export async function getEmailTemplates() {
+  return await fetchApi('/admin/email-templates');
+}
+
+export async function createEmailTemplate(data) {
+  return await fetchApi('/admin/email-templates', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  });
+}
+
+export async function updateEmailTemplate(id, data) {
+  return await fetchApi(`/admin/email-templates/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data)
+  });
+}
+
+export async function deleteEmailTemplate(id) {
+  return await fetchApi(`/admin/email-templates/${id}`, {
+    method: 'DELETE'
+  });
+}
+
+export async function testSendEmail(data) {
+  return await fetchApi('/admin/email-templates/test-send', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  });
+}
+
+export async function getSeoOverview() {
+  return await fetchApi('/admin/seo/overview');
+}
+
+export async function getSystemHealth() {
+  return await fetchApi('/admin/system-health');
+}

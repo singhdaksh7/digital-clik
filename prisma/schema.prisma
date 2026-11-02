@@ -466,16 +466,50 @@ model FAQ {
 }
 
 // -----------------------------------------------------------------------------
-// BLOG & EDITORIAL CONTENT
+// BLOG, AUTHORS & EDITORIAL
 // -----------------------------------------------------------------------------
 
+model Author {
+  id          String     @id @default(uuid())
+  name        String
+  slug        String     @unique
+  role        String?
+  bio         String?
+  photo       String?
+  socialLinks String?    // JSON string e.g. { twitter, linkedin, github }
+  posts       BlogPost[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([slug])
+}
+
 model BlogCategory {
-  id        String     @id @default(uuid())
-  name      String
-  slug      String     @unique
-  posts     BlogPost[]
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  id              String     @id @default(uuid())
+  name            String
+  slug            String     @unique
+  description     String?
+  metaTitle       String?
+  metaDescription String?
+  posts           BlogPost[]
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  @@index([slug])
+}
+
+model BlogTag {
+  id              String        @id @default(uuid())
+  name            String
+  slug            String        @unique
+  description     String?
+  metaTitle       String?
+  metaDescription String?
+  posts           BlogPostTag[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([slug])
 }
 
 model BlogPost {
@@ -487,18 +521,59 @@ model BlogPost {
   coverImage      String
   categoryId      String?
   category        BlogCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  authorId        String?
+  author          Author?       @relation(fields: [authorId], references: [id], onDelete: SetNull)
   authorName      String        @default("DigitalClik Editorial Team")
   status          String        @default("PUBLISHED") // DRAFT, PUBLISHED, ARCHIVED
   publishedAt     DateTime      @default(now())
   featured        Boolean       @default(false)
   metaTitle       String?
   metaDescription String?
+  canonicalUrl    String?
+  ogImage         String?
+  tags            BlogPostTag[]
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
   @@index([slug])
   @@index([status])
   @@index([publishedAt])
+}
+
+model BlogPostTag {
+  blogPostId String
+  blogPost   BlogPost @relation(fields: [blogPostId], references: [id], onDelete: Cascade)
+  tagId      String
+  tag        BlogTag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([blogPostId, tagId])
+}
+
+model WebhookConfig {
+  id          String   @id @default(uuid())
+  url         String
+  event       String   // ALL, LEAD_CREATED, PAGE_PUBLISHED, FORM_SUBMITTED
+  secret      String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([event])
+}
+
+model EmailTemplateRecord {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  subject     String
+  heading     String?
+  body        String
+  footer      String?
+  buttonLabel String?
+  buttonUrl   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([name])
 }
 
 // -----------------------------------------------------------------------------

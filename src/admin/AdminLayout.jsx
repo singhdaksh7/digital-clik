@@ -3,7 +3,8 @@ import {
   LayoutDashboard, Layers, Briefcase, 
   Image as ImageIcon, Inbox, Settings, 
   LogOut, ExternalLink, MousePointer,
-  FileText, CornerDownRight
+  FileText, CornerDownRight, Search,
+  Activity, Webhook, BookOpen
 } from 'lucide-react';
 import { adminLogout } from '../api/admin';
 
@@ -20,6 +21,10 @@ import RedirectsCMS from './RedirectsCMS';
 import GlobalBlocksCMS from './GlobalBlocksCMS';
 import NotFoundManagerCMS from './NotFoundManagerCMS';
 import FormSubmissionsCMS from './FormSubmissionsCMS';
+import BlogCMS from './BlogCMS';
+import SEOOverviewCMS from './SEOOverviewCMS';
+import SystemHealthCMS from './SystemHealthCMS';
+import IntegrationsCMS from './IntegrationsCMS';
 
 export default function AdminLayout({ user, onLogout, onViewPublicSite }) {
   const [activeTab, setActiveTab] = useState('pages');
@@ -28,8 +33,10 @@ export default function AdminLayout({ user, onLogout, onViewPublicSite }) {
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'pages', label: 'Pages & Landing Pages', icon: FileText },
+    { id: 'blog', label: 'Blog & Articles', icon: BookOpen },
     { id: 'global-blocks', label: 'Reusable Global Blocks', icon: Layers },
     { id: 'form-submissions', label: 'Form Inquiries', icon: Inbox },
+    { id: 'seo-overview', label: 'SEO Diagnostics', icon: Search },
     { id: 'redirects', label: '301 / 302 Redirects', icon: CornerDownRight },
     { id: '404-monitor', label: '404 Error Monitor', icon: CornerDownRight },
     { id: 'homepage', label: 'Homepage Sections', icon: Layers },
@@ -37,6 +44,8 @@ export default function AdminLayout({ user, onLogout, onViewPublicSite }) {
     { id: 'projects', label: 'Projects & Work', icon: Briefcase },
     { id: 'media', label: 'Media Library', icon: ImageIcon },
     { id: 'leads', label: 'Core Leads', icon: Inbox },
+    { id: 'integrations', label: 'Integrations & Webhooks', icon: Webhook },
+    { id: 'system-health', label: 'System Health', icon: Activity },
     { id: 'settings', label: 'Global Settings', icon: Settings },
   ];
 
@@ -75,7 +84,7 @@ export default function AdminLayout({ user, onLogout, onViewPublicSite }) {
         </div>
 
         {/* Sidebar Nav Links */}
-        <div style={{ flex: 1, padding: '1.25rem 0.75rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+        <div style={{ flex: 1, padding: '1.25rem 0.75rem', display: 'flex', flexDirection: 'column', gap: '0.35rem', overflowY: 'auto' }}>
           {navItems.map(item => {
             const IconComponent = item.icon;
             const isActive = activeTab === item.id;
@@ -157,8 +166,10 @@ export default function AdminLayout({ user, onLogout, onViewPublicSite }) {
           <>
             {activeTab === 'dashboard' && <DashboardView onNavigate={(tab) => setActiveTab(tab)} />}
             {activeTab === 'pages' && <PagesCMS onEditPage={(id) => setEditingPageId(id)} />}
+            {activeTab === 'blog' && <BlogCMS />}
             {activeTab === 'global-blocks' && <GlobalBlocksCMS />}
             {activeTab === 'form-submissions' && <FormSubmissionsCMS />}
+            {activeTab === 'seo-overview' && <SEOOverviewCMS onNavigate={(tab) => setActiveTab(tab)} />}
             {activeTab === 'redirects' && <RedirectsCMS />}
             {activeTab === '404-monitor' && <NotFoundManagerCMS />}
             {activeTab === 'homepage' && <HomepageCMS />}
@@ -166,6 +177,8 @@ export default function AdminLayout({ user, onLogout, onViewPublicSite }) {
             {activeTab === 'projects' && <ProjectsCMS />}
             {activeTab === 'media' && <MediaLibraryCMS />}
             {activeTab === 'leads' && <LeadsCMS />}
+            {activeTab === 'integrations' && <IntegrationsCMS />}
+            {activeTab === 'system-health' && <SystemHealthCMS />}
             {activeTab === 'settings' && <SettingsCMS />}
           </>
         )}

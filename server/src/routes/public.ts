@@ -3,6 +3,7 @@ import { prisma } from '../lib/prisma.js';
 import { z } from 'zod';
 import { formRateLimiter, publicRateLimiter } from '../middleware/rateLimiter.js';
 import { sendNotificationEmail } from '../utils/mailer.js';
+import { dispatchWebhook } from '../utils/webhook.js';
 
 const router = Router();
 
@@ -341,9 +342,22 @@ router.get('/case-studies/:slug', async (req: Request, res: Response) => {
 
 router.get('/blog', async (req: Request, res: Response) => {
   try {
+    const { category, tag } = req.query;
+    const where: any = { status: 'PUBLISHED' };
+    if (category && typeof category === 'string') {
+      where.category = { slug: category };
+    }
+    if (tag && typeof tag === 'string') {
+      where.tags = { some: { tag: { slug: tag } } };
+    }
+
     const posts = await prisma.blogPost.findMany({
-      where: { status: 'PUBLISHED' },
-      include: { category: true },
+      where,
+      include: {
+        category: true,
+        author: true,
+        tags: { include: { tag: true } }
+      },
       orderBy: { publishedAt: 'desc' }
     });
     return res.json({ success: true, data: posts });
@@ -357,12 +371,106 @@ router.get('/blog/:slug', async (req: Request, res: Response) => {
     const slug = req.params.slug as string;
     const post = await prisma.blogPost.findUnique({
       where: { slug },
-      include: { category: true }
+      include: {
+        category: true,
+        author: true,
+        tags: { include: { tag: true } }
+      }
     });
     if (!post || post.status !== 'PUBLISHED') {
       return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Blog post not found' } });
     }
     return res.json({ success: true, data: post });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+router.get('/blog-categories', async (req: Request, res: Response) => {
+  try {
+    const categories = await prisma.blogCategory.findMany({
+      include: { _count: { select: { posts: { where: { status: 'PUBLISHED' } } } } },
+      orderBy: { name: 'asc' }
+    });
+    return res.json({ success: true, data: categories });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+router.get('/blog-tags', async (req: Request, res: Response) => {
+  try {
+    const tags = await prisma.blogTag.findMany({
+      include: { _count: { select: { posts: { where: { blogPost: { status: 'PUBLISHED' } } } } } },
+      orderBy: { name: 'asc' }
+    });
+    return res.json({ success: true, data: tags });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+router.get('/search', async (req: Request, res: Response) => {
+  try {
+    const q = ((req.query.q as string) || '').trim();
+    if (!q || q.length < 2) {
+      return res.json({ success: true, count: 0, data: [] });
+    }
+
+    const [pages, services, projects, blogPosts] = await Promise.all([
+      prisma.page.findMany({
+        where: {
+          status: 'PUBLISHED',
+          deletedAt: null,
+          OR: [
+            { title: { contains: q, mode: 'insensitive' } },
+            { metaDescription: { contains: q, mode: 'insensitive' } }
+          ]
+        },
+        take: 8,
+        select: { id: true, title: true, slug: true, metaDescription: true }
+      }),
+      prisma.service.findMany({
+        where: {
+          OR: [
+            { title: { contains: q, mode: 'insensitive' } },
+            { shortDescription: { contains: q, mode: 'insensitive' } }
+          ]
+        },
+        take: 8,
+        select: { id: true, title: true, slug: true, shortDescription: true }
+      }),
+      prisma.project.findMany({
+        where: {
+          OR: [
+            { title: { contains: q, mode: 'insensitive' } },
+            { description: { contains: q, mode: 'insensitive' } }
+          ]
+        },
+        take: 8,
+        select: { id: true, title: true, slug: true, description: true }
+      }),
+      prisma.blogPost.findMany({
+        where: {
+          status: 'PUBLISHED',
+          OR: [
+            { title: { contains: q, mode: 'insensitive' } },
+            { excerpt: { contains: q, mode: 'insensitive' } }
+          ]
+        },
+        take: 8,
+        select: { id: true, title: true, slug: true, excerpt: true }
+      })
+    ]);
+
+    const results = [
+      ...pages.map(p => ({ type: 'page', title: p.title, url: `/${p.slug}`, description: p.metaDescription })),
+      ...services.map(s => ({ type: 'service', title: s.title, url: `/services/${s.slug}`, description: s.shortDescription })),
+      ...projects.map(p => ({ type: 'project', title: p.title, url: `/work/${p.slug}`, description: p.description })),
+      ...blogPosts.map(b => ({ type: 'blog', title: b.title, url: `/blog/${b.slug}`, description: b.excerpt }))
+    ];
+
+    return res.json({ success: true, count: results.length, data: results });
   } catch (err: any) {
     return res.status(500).json({ success: false, error: { message: err.message } });
   }
@@ -441,6 +549,16 @@ router.post('/contact', formRateLimiter(), async (req: Request, res: Response) =
       html: `<p>New contact submission received from <strong>${submission.name}</strong> (${submission.email}).</p><p>Message: ${submission.message}</p>`
     }).catch(e => console.error('Email notify background error:', e));
 
+    dispatchWebhook('LEAD_CREATED', {
+      type: 'contact',
+      id: submission.id,
+      name: submission.name,
+      email: submission.email,
+      phone: submission.phone || undefined,
+      subject: submission.subject || undefined,
+      createdAt: submission.createdAt
+    }).catch(e => console.error('Webhook notify background error:', e));
+
     return res.json({ success: true, data: submission });
   } catch (err: any) {
     return res.status(400).json({ success: false, error: { message: err.message } });
@@ -487,6 +605,16 @@ router.post('/project-enquiries', formRateLimiter(), async (req: Request, res: R
       subject: `[New Lead] Audit Request: ${enquiry.name}`,
       html: `<p>New audit/project enquiry from <strong>${enquiry.name}</strong> (${enquiry.email}) for website <strong>${enquiry.website}</strong>.</p>`
     }).catch(e => console.error('Email notify background error:', e));
+
+    dispatchWebhook('LEAD_CREATED', {
+      type: 'project_enquiry',
+      id: enquiry.id,
+      name: enquiry.name,
+      email: enquiry.email,
+      website: enquiry.website,
+      monthlySpend: enquiry.monthlySpend,
+      createdAt: enquiry.createdAt
+    }).catch(e => console.error('Webhook notify background error:', e));
 
     return res.json({ success: true, data: enquiry });
   } catch (err: any) {
@@ -545,6 +673,14 @@ router.post('/forms/submit', formRateLimiter(), async (req: Request, res: Respon
       to: process.env.NOTIFICATION_EMAIL || 'hello@digitalclik.com',
       subject: `[New Submission] ${formName} on /${pageSlug || 'site'}`,
       html: `<p>New form submission received for <strong>${formName}</strong>:</p><pre>${JSON.stringify(fields, null, 2)}</pre>`
+    }).catch(() => {});
+
+    dispatchWebhook('FORM_SUBMITTED', {
+      id: submission.id,
+      formName: submission.formName,
+      pageSlug: submission.pageSlug,
+      data: fields,
+      createdAt: submission.createdAt
     }).catch(() => {});
 
     return res.status(201).json({ success: true, data: submission });

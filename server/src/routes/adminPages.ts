@@ -3,6 +3,7 @@ import { prisma } from '../lib/prisma.js';
 import { requireRole, AuthenticatedRequest } from '../middleware/auth.js';
 import { sanitizeRichText, sanitizeCustomHtml, slugify } from '../utils/sanitizer.js';
 import { refreshRedirectCache } from '../middleware/redirects.js';
+import { dispatchWebhook } from '../utils/webhook.js';
 import crypto from 'crypto';
 
 const router = Router();
@@ -389,6 +390,15 @@ router.post('/pages/:id/publish', requireRole(['SUPER_ADMIN', 'ADMIN']), async (
 
     await createPageRevision(id, req.user?.email, `Status changed to ${status}`);
     await logAudit(req.user?.userId, status === 'PUBLISHED' ? 'PUBLISH_PAGE' : 'UNPUBLISH_PAGE', 'Page', id);
+
+    if (status === 'PUBLISHED') {
+      dispatchWebhook('PAGE_PUBLISHED', {
+        id: updated.id,
+        title: updated.title,
+        slug: updated.slug,
+        publishedAt: updated.publishedAt
+      }).catch(e => console.error('Webhook publish error:', e));
+    }
 
     return res.json({ success: true, data: updated });
   } catch (err: any) {

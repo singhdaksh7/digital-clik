@@ -13,6 +13,7 @@ import { getStorageProvider, validateUpload } from '../utils/storage.js';
 import multer from 'multer';
 import crypto from 'crypto';
 import adminPagesRouter from './adminPages.js';
+import adminCmsProRouter from './adminCmsPro.js';
 
 const router = Router();
 const uploadMemory = multer({ storage: multer.memoryStorage(), limits: { fileSize: 15 * 1024 * 1024 } });
@@ -277,6 +278,7 @@ router.use(requireAuth);
 
 // Mount page builder & redirects routes
 router.use('/', adminPagesRouter);
+router.use('/', adminCmsProRouter);
 
 // -----------------------------------------------------------------------------
 // DASHBOARD METRICS
@@ -852,7 +854,11 @@ router.post('/faqs', requireRole(['SUPER_ADMIN', 'ADMIN', 'EDITOR']), async (req
 router.get('/blog', async (req: AuthenticatedRequest, res: Response) => {
   try {
     const posts = await prisma.blogPost.findMany({
-      include: { category: true },
+      include: {
+        category: true,
+        author: true,
+        tags: { include: { tag: true } }
+      },
       orderBy: { publishedAt: 'desc' }
     });
     return res.json({ success: true, data: posts });
@@ -863,7 +869,20 @@ router.get('/blog', async (req: AuthenticatedRequest, res: Response) => {
 
 router.post('/blog', requireRole(['SUPER_ADMIN', 'ADMIN', 'EDITOR']), async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const post = await prisma.blogPost.create({ data: req.body });
+    const { tagIds, ...bodyData } = req.body;
+    const post = await prisma.blogPost.create({
+      data: {
+        ...bodyData,
+        tags: Array.isArray(tagIds) && tagIds.length > 0 ? {
+          create: tagIds.map((tId: string) => ({ tagId: tId }))
+        } : undefined
+      },
+      include: {
+        category: true,
+        author: true,
+        tags: { include: { tag: true } }
+      }
+    });
     await logAudit(req.user?.userId, 'CREATE', 'BlogPost', post.id);
     return res.json({ success: true, data: post });
   } catch (err: any) {
@@ -874,7 +893,26 @@ router.post('/blog', requireRole(['SUPER_ADMIN', 'ADMIN', 'EDITOR']), async (req
 router.put('/blog/:id', requireRole(['SUPER_ADMIN', 'ADMIN', 'EDITOR']), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const id = req.params.id as string;
-    const post = await prisma.blogPost.update({ where: { id }, data: req.body });
+    const { tagIds, category, author, tags, ...bodyData } = req.body;
+
+    if (Array.isArray(tagIds)) {
+      await prisma.blogPostTag.deleteMany({ where: { blogPostId: id } });
+      if (tagIds.length > 0) {
+        await prisma.blogPostTag.createMany({
+          data: tagIds.map((tId: string) => ({ blogPostId: id, tagId: tId }))
+        });
+      }
+    }
+
+    const post = await prisma.blogPost.update({
+      where: { id },
+      data: bodyData,
+      include: {
+        category: true,
+        author: true,
+        tags: { include: { tag: true } }
+      }
+    });
     await logAudit(req.user?.userId, 'UPDATE', 'BlogPost', id);
     return res.json({ success: true, data: post });
   } catch (err: any) {
