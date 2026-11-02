@@ -24,6 +24,10 @@ export default function DynamicPageView({ slug, previewId, previewToken, onOpenA
       })
       .then((data) => {
         if (isMounted) {
+          if (data.success && data.redirect) {
+            window.location.replace(data.redirect.targetPath);
+            return;
+          }
           if (data.success && data.data) {
             setPage(data.data);
             applyPageSEO(data.data);

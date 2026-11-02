@@ -559,6 +559,25 @@ router.get('/pages/preview/:id', async (req: Request, res: Response) => {
 router.get('/pages/:slug', async (req: Request, res: Response) => {
   try {
     const slug = req.params.slug as string;
+
+    // Check if path has a 301/302 redirect configured
+    const redirect = await prisma.redirect.findFirst({
+      where: {
+        sourcePath: { in: [`/${slug}`, slug] },
+        isActive: true
+      }
+    });
+
+    if (redirect) {
+      return res.json({
+        success: true,
+        redirect: {
+          targetPath: redirect.targetPath,
+          statusCode: redirect.statusCode
+        }
+      });
+    }
+
     const page = await prisma.page.findUnique({
       where: { slug },
       include: {
