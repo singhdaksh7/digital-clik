@@ -17,9 +17,6 @@ import adminPagesRouter from './adminPages.js';
 const router = Router();
 const uploadMemory = multer({ storage: multer.memoryStorage(), limits: { fileSize: 15 * 1024 * 1024 } });
 
-// Mount page builder & redirects routes
-router.use('/', adminPagesRouter);
-
 // Audit log helper
 async function logAudit(userId: string | undefined, action: string, entityType: string, entityId?: string, metadata?: any) {
   try {
@@ -277,6 +274,9 @@ router.get('/auth/me', requireAuth, async (req: AuthenticatedRequest, res: Respo
 
 // Protect all subsequent CMS admin routes
 router.use(requireAuth);
+
+// Mount page builder & redirects routes
+router.use('/', adminPagesRouter);
 
 // -----------------------------------------------------------------------------
 // DASHBOARD METRICS
